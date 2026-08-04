@@ -1,0 +1,311 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Biye Kori v3 — vibrant pink + gold.
+
+   Theme resolution: `layout.tsx` runs a blocking script that always writes a
+   RESOLVED `data-theme="light" | "dark"` onto <html> (it resolves the "system"
+   preference itself). That is why there is exactly ONE dark block below and no
+   `prefers-color-scheme` media query — the attribute is always authoritative.
+   `ThemeProvider` keeps it in sync afterwards.
+   --------------------------------------------------------------------------- */
+
+:root {
+  /* Surfaces — warm cream ground, white cards floating above it. */
+  --color-bg: #fdfaf6;
+  --color-surface: #f5ece2;
+  --color-surface-raised: #ffffff;
+  --color-border: #ead9c6;
+
+  --color-text: #22090f;
+  --color-text-muted: #6d4c53;
+  /* Deliberately darker than a neutral grey — #9ca3af fails on a cream ground. */
+  --color-text-faint: #8d7079;
+
+  --color-primary: #be185d;
+  --color-primary-light: #ec4899;
+  /* Gradient deep end and solid fills ONLY. For text/icons use -accent. */
+  --color-primary-dark: #9d174d;
+  --color-primary-accent: #be185d;
+  --color-primary-tint: #fdf2f8;
+  --color-primary-glow: rgba(190, 24, 93, 0.45);
+
+  --color-gold: #c9a227;
+  --color-gold-light: #e3c565;
+  /* Gold as TEXT. The fill gold is only ~2.3:1 on cream and fails outright. */
+  --color-gold-accent: #8a6d13;
+  --color-gold-tint: #faf3dd;
+  --color-gold-glow: rgba(201, 162, 39, 0.4);
+
+  --color-success: #15803d;
+  --color-success-tint: #edf6ef;
+  /* Pulled toward gold so amber doesn't fight the palette. */
+  --color-warning: #a35b09;
+  --color-warning-tint: #fbf1de;
+  /* Reserved for form errors + destructive actions. The swipe deck's "pass"
+     uses --color-pass instead: maroon and red sit ~15deg apart in hue, so a
+     red pass button next to a maroon like button is genuinely ambiguous. */
+  --color-danger: #c0322b;
+  --color-danger-tint: #fbeeed;
+  --color-verified: #1574b8;
+
+  --color-pass: #6b5a52;
+  /* Warm ivory for text on maroon fills; near-black for text on gold fills
+     (gold is a mid-tone in both themes, so it always wants dark ink). */
+  --color-on-primary: #fff5ef;
+  --color-on-gold: #1f1403;
+  --color-scrim: rgba(42, 12, 22, 0.45);
+
+  /* The footer / success-teaser band stay dark regardless of theme. */
+  --color-inverse-bg: #1a070c;
+  --color-inverse-surface: #2b1119;
+  --color-inverse-border: #452029;
+  --color-inverse-text: #f9f2e8;
+  --color-inverse-text-muted: #c9b0a9;
+  --color-inverse-accent: #d9b23c;
+
+  /* Elevation ink, consumed by the --shadow-* scale in @theme inline. */
+  --elev-1: 0 1px 3px 0 rgba(42, 12, 22, 0.08), 0 1px 2px -1px rgba(42, 12, 22, 0.06);
+  --elev-2: 0 4px 10px -2px rgba(42, 12, 22, 0.1), 0 2px 4px -2px rgba(42, 12, 22, 0.06);
+  --elev-3: 0 12px 28px -8px rgba(42, 12, 22, 0.16);
+  --elev-4: 0 24px 48px -16px rgba(42, 12, 22, 0.22);
+  --elev-5: 0 32px 64px -20px rgba(42, 12, 22, 0.3);
+}
+
+:root[data-theme="dark"] {
+  /* Muted, low-saturation neutrals — a faint cool-mauve whisper, not the old
+     maroon cast. Kept deliberately close to neutral grey so the vivid pink
+     accent ramp reads as the ONLY saturated color on the page. */
+  --color-bg: #120c10;
+  --color-surface: #1b1216;
+  --color-surface-raised: #241a1f;
+  --color-border: #3a2a30;
+
+  --color-text: #f7efe9;
+  --color-text-muted: #c3a8ae;
+  --color-text-faint: #8b6f78;
+
+  /* NOTE: the primary ramp inverts in perceived lightness here, on purpose.
+     --color-primary-dark is a gradient deep end, and --color-primary-accent is
+     a text colour that has to stay readable on a near-black ground. Do not
+     "fix" these back to their light-theme relationship. */
+  --color-primary: #db2777;
+  --color-primary-light: #f472b6;
+  --color-primary-dark: #9d174d;
+  --color-primary-accent: #f472b6;
+  --color-primary-tint: rgba(219, 39, 119, 0.16);
+  --color-primary-glow: rgba(219, 39, 119, 0.55);
+
+  --color-gold: #d9b23c;
+  --color-gold-light: #f0d485;
+  --color-gold-accent: #e6c455;
+  --color-gold-tint: rgba(217, 178, 60, 0.16);
+  --color-gold-glow: rgba(217, 178, 60, 0.45);
+
+  --color-success: #34c06a;
+  --color-success-tint: rgba(52, 192, 106, 0.16);
+  --color-warning: #e0a138;
+  --color-warning-tint: rgba(224, 161, 56, 0.16);
+  --color-danger: #f0564d;
+  --color-danger-tint: rgba(240, 86, 77, 0.16);
+  --color-verified: #3aa9f5;
+
+  --color-pass: #a7938c;
+  --color-on-primary: #fff5ef;
+  --color-on-gold: #1f1403;
+  --color-scrim: rgba(0, 0, 0, 0.7);
+
+  /* inverse-* are intentionally NOT overridden — the band is already dark
+     maroon and should look identical in both themes. */
+
+  --elev-1: 0 1px 3px 0 rgba(0, 0, 0, 0.5);
+  --elev-2: 0 4px 10px -2px rgba(0, 0, 0, 0.55);
+  --elev-3: 0 12px 28px -8px rgba(0, 0, 0, 0.6);
+  --elev-4: 0 24px 48px -16px rgba(0, 0, 0, 0.65);
+  --elev-5: 0 32px 64px -20px rgba(0, 0, 0, 0.7);
+}
+
+/* `inline` matters: it inlines the var() REFERENCE into each utility, so the
+   utilities resolve against the cascade at runtime and therefore react to the
+   theme without needing a second @theme block. */
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-border: var(--color-border);
+
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-faint: var(--color-text-faint);
+
+  --color-primary: var(--color-primary);
+  --color-primary-light: var(--color-primary-light);
+  --color-primary-dark: var(--color-primary-dark);
+  --color-primary-accent: var(--color-primary-accent);
+  --color-primary-tint: var(--color-primary-tint);
+
+  --color-gold: var(--color-gold);
+  --color-gold-light: var(--color-gold-light);
+  --color-gold-accent: var(--color-gold-accent);
+  --color-gold-tint: var(--color-gold-tint);
+
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-danger: var(--color-danger);
+  --color-verified: var(--color-verified);
+  --color-pass: var(--color-pass);
+  --color-on-primary: var(--color-on-primary);
+  --color-on-gold: var(--color-on-gold);
+  --color-scrim: var(--color-scrim);
+
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-inter);
+  --font-bengali: var(--font-hind-siliguri);
+
+  /* Geometry, retuned globally. The app has 67 tokenizable `rounded-*` usages
+     (plus 75 `rounded-full` pills, which are correct as-is) — overriding the
+     scale here retunes all of them without touching a single .tsx file. */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
+
+  /* Same trick for elevation — warm maroon-tinted ink in light, near-black in
+     dark, switched by the cascade rather than by a duplicated scale. */
+  --shadow-xs: var(--elev-1);
+  --shadow-sm: var(--elev-1);
+  --shadow-md: var(--elev-2);
+  --shadow-lg: var(--elev-3);
+  --shadow-xl: var(--elev-4);
+  --shadow-2xl: var(--elev-5);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans), var(--font-bengali), sans-serif;
+  min-height: 100dvh;
+}
+
+::selection {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+button:not(:disabled),
+select:not(:disabled),
+[role='button'],
+label[for] {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.font-display {
+  font-family: var(--font-display), var(--font-bengali), serif;
+}
+
+.glow-primary {
+  box-shadow: 0 10px 30px -12px var(--color-primary-glow);
+}
+
+.glow-gold {
+  box-shadow: 0 10px 30px -12px var(--color-gold-glow);
+}
+
+.surface-card {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+}
+
+/* Declared after .surface-card so combining both classes (a "colored card")
+   always resolves to the gradient background, not the plain surface one. */
+.gradient-primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+}
+
+.gradient-gold {
+  background: linear-gradient(135deg, var(--color-gold-light) 0%, var(--color-gold) 100%);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* The ceremonial divider, used between sections everywhere — this one rule
+   carries most of the "wedding brand, not dating app" feeling. */
+.rule-gold {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+}
+
+/* Sections that stay a dark band regardless of the page theme
+   (footer, success-stories teaser). */
+.inverse-band {
+  background: var(--color-inverse-bg);
+  color: var(--color-inverse-text);
+  border-color: var(--color-inverse-border);
+}
+.inverse-band .inverse-muted {
+  color: var(--color-inverse-text-muted);
+}
+.inverse-band .surface-card {
+  background: var(--color-inverse-surface);
+  border-color: var(--color-inverse-border);
+}
+.inverse-band a:hover {
+  color: var(--color-inverse-accent);
+}
+
+@keyframes float-glow {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.55; }
+  50% { transform: translate3d(0, -16px, 0) scale(1.05); opacity: 0.8; }
+}
+
+.animate-float-glow {
+  animation: float-glow 8s ease-in-out infinite;
+}
+
+@keyframes bell-ring {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-15deg); }
+  40% { transform: rotate(12deg); }
+  60% { transform: rotate(-8deg); }
+  80% { transform: rotate(4deg); }
+}
+
+.animate-bell-ring {
+  animation: bell-ring 0.6s ease-in-out;
+  transform-origin: top center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .animate-float-glow,
+  .animate-bell-ring { animation: none; }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+}
