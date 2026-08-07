@@ -25,7 +25,10 @@ export function proxy(request: NextRequest) {
   const isProtected = PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   if (isProtected && !hasSession) {
     const loginUrl = new URL('/login', request.nextUrl);
-    loginUrl.searchParams.set('redirect', pathname);
+    // Include the query string too — e.g. the homepage search hero sends
+    // visitors to /browse?ageMin=.. and that filter set needs to survive
+    // the login round-trip, not just the bare path.
+    loginUrl.searchParams.set('redirect', pathname + request.nextUrl.search);
     return NextResponse.redirect(loginUrl);
   }
 

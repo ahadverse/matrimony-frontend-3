@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
+import { PROFILE_FIELD_TABS } from '@/lib/profileFieldMap';
 
 const TOTAL_FIELDS = 31;
 
@@ -36,7 +37,7 @@ export function CompletionPanel({ percent, missingFields, maxVisible = 6 }: Comp
           {visible.map((field) => (
             <Link
               key={field}
-              href="/edit-profile"
+              href={`/edit-profile?tab=${PROFILE_FIELD_TABS[field] ?? 'basic'}&field=${field}`}
               className="flex items-center justify-between rounded-lg bg-[var(--color-warning-tint)] px-3 py-2 text-xs font-medium text-[var(--color-warning)] hover:brightness-95"
             >
               {t(`browse.gateMissing.${field}`)}

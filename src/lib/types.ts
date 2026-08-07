@@ -3,6 +3,7 @@ export type MaritalStatus = 'single' | 'divorced' | 'widowed';
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 export type BloodGroup = 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
 export type Complexion = 'fair' | 'medium' | 'dark';
+export type ProfileCreatedBy = 'self' | 'parents' | 'brother' | 'sister' | 'relative';
 export type VerificationStatus = 'pending' | 'approved' | 'rejected';
 
 export interface MyVerification {
@@ -56,6 +57,7 @@ export interface MyProfile {
   religion: string | null;
   heightCm: number | null;
   maritalStatus: MaritalStatus;
+  profileCreatedBy: ProfileCreatedBy | null;
   fatherOccupation: string | null;
   motherOccupation: string | null;
   siblingsCount: number | null;
@@ -80,7 +82,6 @@ export interface MyProfile {
   hobbies: string | null;
   familyFinancialStatus: string | null;
   bodyType: string | null;
-  marriageTimeline: string | null;
   numberOfSisters: number | null;
   numberOfBrothers: number | null;
   spotlightUntil: string | null;
@@ -93,6 +94,9 @@ export interface BrowseCard {
   district: string;
   subDistrict: string | null;
   profession: string | null;
+  education: string | null;
+  religion: string | null;
+  heightCm: number | null;
   photoUrl: string | null;
   distanceKm: number | null;
   isVerified: boolean;
@@ -143,6 +147,7 @@ export interface ProfileDetail {
   religion: string | null;
   heightCm: number | null;
   maritalStatus: MaritalStatus;
+  profileCreatedBy: ProfileCreatedBy | null;
   fatherOccupation: string | null;
   motherOccupation: string | null;
   siblingsCount: number | null;
@@ -161,7 +166,6 @@ export interface ProfileDetail {
   hobbies: string | null;
   familyFinancialStatus: string | null;
   bodyType: string | null;
-  marriageTimeline: string | null;
   numberOfSisters: number | null;
   numberOfBrothers: number | null;
   photos: string[];

@@ -11,6 +11,7 @@ const navLinks = [
   { href: '/success-stories', labelKey: 'landing.navStories' },
   { href: '/features', labelKey: 'landing.navFeatures' },
   { href: '/how-it-works', labelKey: 'landing.navHowItWorks' },
+  { href: '/assistance-service', labelKey: 'assistantService.navLabel' },
   { href: '/faq', labelKey: 'landing.navFaq' },
 ] as const;
 

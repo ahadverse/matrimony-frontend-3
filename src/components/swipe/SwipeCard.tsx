@@ -2,10 +2,11 @@
 
 import { useState, type KeyboardEvent } from 'react';
 import { motion, type Variants } from 'framer-motion';
-import { BadgeCheck, Briefcase, Heart, MapPin } from 'lucide-react';
+import { BadgeCheck, Briefcase, GraduationCap, Heart, MapPin, Ruler } from 'lucide-react';
 import type { BrowseCard } from '@/lib/types';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { resolveUploadUrl } from '@/lib/api-client';
+import { formatHeight } from '@/lib/height';
 import { useSwipeGesture, type SwipeAction } from './useSwipeGesture';
 import { SwipeStamp } from './SwipeStamp';
 
@@ -140,6 +141,28 @@ export function SwipeCard({ card, isTop, stackIndex, onSwipe }: SwipeCardProps) 
               <Briefcase size={14} className="shrink-0 text-[var(--color-primary-accent)]" />
               {card.profession}
             </p>
+          )}
+          {(card.education || card.religion || card.heightCm != null) && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-text-muted)]">
+              {card.education && (
+                <span className="flex items-center gap-1">
+                  <GraduationCap size={13} className="shrink-0 text-[var(--color-primary-accent)]" />
+                  {card.education}
+                </span>
+              )}
+              {card.religion && (
+                <span className="flex items-center gap-1">
+                  <Heart size={13} className="shrink-0 text-[var(--color-primary-accent)]" />
+                  {card.religion}
+                </span>
+              )}
+              {card.heightCm != null && (
+                <span className="flex items-center gap-1">
+                  <Ruler size={13} className="shrink-0 text-[var(--color-primary-accent)]" />
+                  {formatHeight(card.heightCm)}
+                </span>
+              )}
+            </div>
           )}
           <div className="mt-0.5 flex items-center gap-1.5">
             <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-surface)] px-2.5 py-1 text-xs text-[var(--color-text-faint)]">

@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Camera, Check, Trash2, UserRound } from 'lucide-react';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { DobPicker } from '@/components/ui/DobPicker';
 import { Button } from '@/components/ui/Button';
@@ -15,7 +16,9 @@ import { api, ApiError } from '@/lib/api-client';
 import { setToken } from '@/lib/auth-token';
 import { useDistricts, useUpazilas } from '@/lib/queries';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
-import type { AuthResponse, Gender } from '@/lib/types';
+import type { AuthResponse, Gender, ProfileCreatedBy } from '@/lib/types';
+
+const PROFILE_CREATED_BY_OPTIONS: ProfileCreatedBy[] = ['self', 'parents', 'brother', 'sister', 'relative'];
 
 type Step = 'phone' | 'otp' | 'account' | 'profile' | 'location' | 'photos' | 'done';
 
@@ -27,6 +30,7 @@ interface StoredRegisterProgress {
   verificationToken: string;
   gender: Gender;
   dob: string;
+  profileCreatedBy: ProfileCreatedBy;
   name: string;
   district: string;
   subDistrict: string;
@@ -45,6 +49,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [gender, setGender] = useState<Gender>('male');
   const [dob, setDob] = useState('');
+  const [profileCreatedBy, setProfileCreatedBy] = useState<ProfileCreatedBy>('self');
 
   const [name, setName] = useState('');
   const [district, setDistrict] = useState('');
@@ -78,6 +83,7 @@ export default function RegisterPage() {
       setVerificationToken(saved.verificationToken ?? '');
       setGender(saved.gender ?? 'male');
       setDob(saved.dob ?? '');
+      setProfileCreatedBy(saved.profileCreatedBy ?? 'self');
       setName(saved.name ?? '');
       setDistrict(saved.district ?? '');
       setSubDistrict(saved.subDistrict ?? '');
@@ -98,12 +104,13 @@ export default function RegisterPage() {
       verificationToken,
       gender,
       dob,
+      profileCreatedBy,
       name,
       district,
       subDistrict,
     };
     sessionStorage.setItem(REGISTER_PROGRESS_KEY, JSON.stringify(progress));
-  }, [step, phone, verificationToken, gender, dob, name, district, subDistrict]);
+  }, [step, phone, verificationToken, gender, dob, profileCreatedBy, name, district, subDistrict]);
 
   const sendOtp = useMutation({
     mutationFn: () => api.post('auth/otp/send', { phone, purpose: 'register' }),
@@ -132,7 +139,13 @@ export default function RegisterPage() {
 
   const saveProfile = useMutation({
     mutationFn: () =>
-      api.put('profiles/me', { name, district, subDistrict: subDistrict || undefined, maritalStatus: 'single' }),
+      api.put('profiles/me', {
+        name,
+        district,
+        subDistrict: subDistrict || undefined,
+        maritalStatus: 'single',
+        profileCreatedBy,
+      }),
     onSuccess: () => setStep('location'),
     onError: (e) => toast.error(e instanceof ApiError ? String(e.message) : 'Could not save profile'),
   });
@@ -264,6 +277,18 @@ export default function RegisterPage() {
                   ))}
                 </div>
               </div>
+
+              <Select
+                label={t('auth.register.profileCreatedBy')}
+                value={profileCreatedBy}
+                onChange={(e) => setProfileCreatedBy(e.target.value as ProfileCreatedBy)}
+              >
+                {PROFILE_CREATED_BY_OPTIONS.map((v) => (
+                  <option key={v} value={v}>
+                    {t(`auth.register.profileCreatedBy${v.charAt(0).toUpperCase()}${v.slice(1)}`)}
+                  </option>
+                ))}
+              </Select>
 
               <div>
                 <DobPicker

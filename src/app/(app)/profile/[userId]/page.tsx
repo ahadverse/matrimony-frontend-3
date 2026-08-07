@@ -8,7 +8,6 @@ import {
   Briefcase,
   BadgeCheck,
   Building2,
-  Calendar,
   Droplet,
   GraduationCap,
   Globe2,
@@ -36,6 +35,7 @@ import {
 } from '@/lib/queries';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { ApiError, resolveUploadUrl } from '@/lib/api-client';
+import { formatHeight } from '@/lib/height';
 
 export default function ProfileDetailPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = use(params);
@@ -65,10 +65,17 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ userId
 
   const details = [
     { icon: Heart, label: t('profileDetail.maritalStatus'), value: t(`profileDetail.${profile.maritalStatus}`) },
+    {
+      icon: Users,
+      label: t('auth.register.profileCreatedBy'),
+      value: profile.profileCreatedBy
+        ? t(`auth.register.profileCreatedBy${profile.profileCreatedBy.charAt(0).toUpperCase()}${profile.profileCreatedBy.slice(1)}`)
+        : null,
+    },
     { icon: Briefcase, label: t('profileDetail.profession'), value: profile.profession },
     { icon: GraduationCap, label: t('profileDetail.education'), value: profile.education },
     { icon: Heart, label: t('profileDetail.religion'), value: profile.religion },
-    { icon: Ruler, label: t('profileDetail.height'), value: profile.heightCm ? `${profile.heightCm} cm` : null },
+    { icon: Ruler, label: t('profileDetail.height'), value: formatHeight(profile.heightCm) },
     { icon: Users, label: t('profileDetail.fatherOccupation'), value: profile.fatherOccupation },
     { icon: Users, label: t('profileDetail.motherOccupation'), value: profile.motherOccupation },
     { icon: Users, label: t('profileDetail.siblings'), value: profile.siblingsCount != null ? String(profile.siblingsCount) : null },
@@ -91,7 +98,6 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ userId
     { icon: Globe2, label: t('editProfile.residencyStatus'), value: profile.residencyStatus },
     { icon: Home, label: t('editProfile.growUpIn'), value: profile.growUpIn },
     { icon: GraduationCap, label: t('editProfile.collegeUniversity'), value: profile.collegeUniversity },
-    { icon: Calendar, label: t('editProfile.marriageTimeline'), value: profile.marriageTimeline },
   ].filter((d) => d.value);
 
   const photos = profile.photos.length > 0 ? profile.photos : [null];

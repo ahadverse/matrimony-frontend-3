@@ -1,13 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { SlidersHorizontal, UserRoundPen } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Select';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { RangeSlider } from '@/components/ui/RangeSlider';
 import { Modal } from '@/components/ui/Modal';
 import { SwipeStack } from '@/components/swipe/SwipeStack';
 import { DeckSkeleton } from '@/components/swipe/DeckSkeleton';
@@ -31,9 +33,37 @@ const MIN_BROWSE_COMPLETION_PERCENT = 80;
 // is the refill; there's no cursor/page to track.
 const REFILL_AT = 3;
 
+// The homepage hero search sends visitors here as /browse?ageMin=..&religion=..
+// (see HeroMatchFinder) — pick those straight up as the initial filter set
+// instead of making them re-enter what they just searched.
+function filtersFromSearchParams(params: ReturnType<typeof useSearchParams>): BrowseFilters {
+  const ageMin = params.get('ageMin');
+  const ageMax = params.get('ageMax');
+  return {
+    district: params.get('district') || undefined,
+    subDistrict: params.get('subDistrict') || undefined,
+    education: params.get('education') || undefined,
+    profession: params.get('profession') || undefined,
+    religion: params.get('religion') || undefined,
+    maritalStatus: params.get('maritalStatus') || undefined,
+    ageMin: ageMin ? Number(ageMin) : undefined,
+    ageMax: ageMax ? Number(ageMax) : undefined,
+  };
+}
+
 export default function BrowsePage() {
   const { t } = useLanguage();
-  const [filters, setFilters] = useState<BrowseFilters>({});
+  return (
+    <Suspense fallback={<div className="pt-24 text-center text-[var(--color-text-muted)]">{t('common.loading')}</div>}>
+      <BrowseContent />
+    </Suspense>
+  );
+}
+
+function BrowseContent() {
+  const { t } = useLanguage();
+  const searchParams = useSearchParams();
+  const [filters, setFilters] = useState<BrowseFilters>(() => filtersFromSearchParams(searchParams));
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [match, setMatch] = useState<{ card: BrowseCard; conversationId: string } | null>(null);
 
@@ -172,6 +202,10 @@ export default function BrowsePage() {
   );
 }
 
+const MIN_AGE = 1;
+const MAX_AGE = 100;
+const formatAge = (v: number) => (v === MAX_AGE ? `${v}+` : String(v));
+
 function BrowseFilterModal({
   open,
   onClose,
@@ -193,6 +227,8 @@ function BrowseFilterModal({
   const [profession, setProfession] = useState(filters.profession ?? '');
   const [religion, setReligion] = useState(filters.religion ?? '');
   const [maritalStatus, setMaritalStatus] = useState(filters.maritalStatus ?? '');
+  const [ageMin, setAgeMin] = useState(filters.ageMin ?? MIN_AGE);
+  const [ageMax, setAgeMax] = useState(filters.ageMax ?? MAX_AGE);
 
   function apply() {
     onApply({
@@ -201,6 +237,8 @@ function BrowseFilterModal({
       profession: profession || undefined,
       religion: religion || undefined,
       maritalStatus: maritalStatus || undefined,
+      ageMin: ageMin > MIN_AGE ? ageMin : undefined,
+      ageMax: ageMax < MAX_AGE ? ageMax : undefined,
     });
     onClose();
   }
@@ -211,6 +249,8 @@ function BrowseFilterModal({
     setProfession('');
     setReligion('');
     setMaritalStatus('');
+    setAgeMin(MIN_AGE);
+    setAgeMax(MAX_AGE);
     onApply({});
     onClose();
   }
@@ -225,6 +265,22 @@ function BrowseFilterModal({
           onChange={setDistrict}
           options={districts?.map((d) => d.name) ?? []}
         />
+        <div>
+          <span className="text-sm font-medium text-[var(--color-text-muted)]">{t('browse.ageRange')}</span>
+          <div className="mt-1.5">
+            <RangeSlider
+              min={MIN_AGE}
+              max={MAX_AGE}
+              valueMin={ageMin}
+              valueMax={ageMax}
+              onChange={(nextMin, nextMax) => {
+                setAgeMin(nextMin);
+                setAgeMax(nextMax);
+              }}
+              formatValue={formatAge}
+            />
+          </div>
+        </div>
         <Select label="Education" placeholder={t('browse.anyEducation')} value={education} onChange={(e) => setEducation(e.target.value)}>
           {['SSC', 'HSC', 'Diploma', "Bachelor's", "Master's", 'PhD'].map((v) => (
             <option key={v} value={v}>

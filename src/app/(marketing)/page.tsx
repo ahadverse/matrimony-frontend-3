@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { HeroMatchFinder } from '@/components/marketing/HeroMatchFinder';
 import { FadeIn } from '@/components/motion/FadeIn';
 import { StaggerItem, StaggerList } from '@/components/motion/StaggerList';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
@@ -105,32 +106,14 @@ export default function LandingPage() {
           className="absolute -right-12 -bottom-10 h-40 w-40 rotate-12 text-[var(--color-on-primary)]/15 sm:h-56 sm:w-56 lg:h-72 lg:w-72"
           aria-hidden
         />
-        <div className="relative mx-auto max-w-3xl px-6 py-16 text-center text-[var(--color-on-primary)] lg:py-24">
+        <div className="relative mx-auto max-w-4xl px-6 py-16 text-center text-[var(--color-on-primary)] lg:py-24">
           <FadeIn delay={0.1}>
-            <h1 className="font-display text-4xl font-semibold leading-tight sm:text-5xl">{t('landing.title')}</h1>
+            <h1 className="font-display text-3xl font-semibold leading-tight sm:text-4xl">{t('landing.title')}</h1>
           </FadeIn>
           <FadeIn delay={0.2}>
-            <p className="mx-auto mt-5 max-w-lg text-[var(--color-on-primary)]/85">{t('landing.subtitle')}</p>
-          </FadeIn>
-          <FadeIn delay={0.3}>
-            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-              <Link href="/browse">
-                <Button size="lg" className="!bg-white !bg-none !text-[var(--color-primary-accent)]">
-                  {t('landing.ctaPrimary')}
-                </Button>
-              </Link>
-              <Link href="/login">
-                <Button size="lg" variant="secondary" className="!border-[var(--color-on-primary)]/50 !text-[var(--color-on-primary)]">
-                  {t('landing.ctaSecondary')}
-                </Button>
-              </Link>
+            <div className="mt-8">
+              <HeroMatchFinder />
             </div>
-          </FadeIn>
-          <FadeIn delay={0.4}>
-            <p className="mt-6 inline-flex items-center gap-2 text-xs text-[var(--color-on-primary)]/70">
-              <ShieldCheck size={14} />
-              {t('landing.trustBadge')}
-            </p>
           </FadeIn>
         </div>
       </section>

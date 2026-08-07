@@ -53,6 +53,8 @@ export interface BrowseFilters {
   profession?: string;
   religion?: string;
   maritalStatus?: string;
+  ageMin?: number;
+  ageMax?: number;
 }
 
 export function useBrowseFeed(filters: BrowseFilters = {}, enabled = true) {
@@ -66,6 +68,8 @@ export function useBrowseFeed(filters: BrowseFilters = {}, enabled = true) {
       if (filters.profession) params.set('profession', filters.profession);
       if (filters.religion) params.set('religion', filters.religion);
       if (filters.maritalStatus) params.set('maritalStatus', filters.maritalStatus);
+      if (filters.ageMin != null) params.set('ageMin', String(filters.ageMin));
+      if (filters.ageMax != null) params.set('ageMax', String(filters.ageMax));
       const qs = params.toString();
       // No page/pageSize: the backend then returns a bare, already-shuffled
       // array (capped server-side) with already-swiped ids excluded, which is
@@ -78,8 +82,6 @@ export function useBrowseFeed(filters: BrowseFilters = {}, enabled = true) {
 }
 
 export interface BrowseFeedCard extends BrowseCard {
-  education: string | null;
-  religion: string | null;
   maritalStatus: MaritalStatus;
   isSpotlighted: boolean;
 }
@@ -104,6 +106,8 @@ export function useBrowseFeedInfinite(filters: BrowseFilters = {}, enabled = tru
       if (filters.profession) params.set('profession', filters.profession);
       if (filters.religion) params.set('religion', filters.religion);
       if (filters.maritalStatus) params.set('maritalStatus', filters.maritalStatus);
+      if (filters.ageMin != null) params.set('ageMin', String(filters.ageMin));
+      if (filters.ageMax != null) params.set('ageMax', String(filters.ageMax));
       return api.get<BrowseFeedPage>(`swipes/browse?${params.toString()}`);
     },
     initialPageParam: 1,

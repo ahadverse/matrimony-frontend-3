@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { BadgeCheck, Camera, Trash2 } from 'lucide-react';
@@ -27,9 +27,27 @@ import {
 } from '@/lib/queries';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { MAX_IMAGE_SIZE_MB, validateImageFile } from '@/lib/fileValidation';
-import type { BloodGroup, Complexion, MaritalStatus, MyProfile } from '@/lib/types';
+import type { BloodGroup, Complexion, MaritalStatus, MyProfile, ProfileCreatedBy } from '@/lib/types';
+import type { EditProfileTab } from '@/lib/profileFieldMap';
+import { cmToFeetInches, feetInchesToCm } from '@/lib/height';
 
-type Tab = 'basic' | 'photos' | 'personal' | 'lifestyle' | 'partner' | 'verification' | 'privacy';
+// Backend clamps heightCm to [120, 220] — keep dropdown options within that range.
+const HEIGHT_MIN_CM = 120;
+const HEIGHT_MAX_CM = 220;
+const HEIGHT_FEET_OPTIONS = [4, 5, 6, 7];
+
+const BODY_TYPE_OPTIONS = [
+  { value: 'Slim', labelKey: 'editProfile.bodyTypeSlim' },
+  { value: 'Athletic', labelKey: 'editProfile.bodyTypeAthletic' },
+  { value: 'Average', labelKey: 'editProfile.bodyTypeAverage' },
+  { value: 'Heavy', labelKey: 'editProfile.bodyTypeHeavy' },
+] as const;
+
+const PROFILE_CREATED_BY_OPTIONS: ProfileCreatedBy[] = ['self', 'parents', 'brother', 'sister', 'relative'];
+
+type Tab = EditProfileTab;
+
+const FIELD_HIGHLIGHT_CLASSES = ['ring-2', 'ring-[var(--color-primary)]', 'ring-offset-2', 'ring-offset-[var(--color-bg)]'];
 
 interface FormState {
   name: string;
@@ -46,6 +64,7 @@ interface FormState {
   religion: string;
   heightCm: string;
   maritalStatus: MaritalStatus;
+  profileCreatedBy: ProfileCreatedBy | '';
   fatherOccupation: string;
   motherOccupation: string;
   siblingsCount: string;
@@ -60,7 +79,6 @@ interface FormState {
   hobbies: string;
   familyFinancialStatus: string;
   bodyType: string;
-  marriageTimeline: string;
   partnerPreferences: string;
 }
 
@@ -80,6 +98,7 @@ function emptyForm(): FormState {
     religion: '',
     heightCm: '',
     maritalStatus: 'single',
+    profileCreatedBy: '',
     fatherOccupation: '',
     motherOccupation: '',
     siblingsCount: '',
@@ -94,7 +113,6 @@ function emptyForm(): FormState {
     hobbies: '',
     familyFinancialStatus: '',
     bodyType: '',
-    marriageTimeline: '',
     partnerPreferences: '',
   };
 }
@@ -115,6 +133,7 @@ function fillForm(profile: MyProfile): FormState {
     religion: profile.religion ?? '',
     heightCm: profile.heightCm ? String(profile.heightCm) : '',
     maritalStatus: profile.maritalStatus ?? 'single',
+    profileCreatedBy: profile.profileCreatedBy ?? '',
     fatherOccupation: profile.fatherOccupation ?? '',
     motherOccupation: profile.motherOccupation ?? '',
     siblingsCount: profile.siblingsCount != null ? String(profile.siblingsCount) : '',
@@ -129,13 +148,13 @@ function fillForm(profile: MyProfile): FormState {
     hobbies: profile.hobbies ?? '',
     familyFinancialStatus: profile.familyFinancialStatus ?? '',
     bodyType: profile.bodyType ?? '',
-    marriageTimeline: profile.marriageTimeline ?? '',
     partnerPreferences: profile.partnerPreferences ?? '',
   };
 }
 
 function EditProfileContent() {
   const { t } = useLanguage();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get('tab') as Tab) ?? 'basic';
   const [tab, setTab] = useState<Tab>(initialTab);
@@ -152,6 +171,29 @@ function EditProfileContent() {
   useEffect(() => {
     if (profile) setForm(fillForm(profile));
   }, [profile]);
+
+  useEffect(() => {
+    const urlTab = searchParams.get('tab') as Tab | null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (urlTab && urlTab !== tab) setTab(urlTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  useEffect(() => {
+    const field = searchParams.get('field');
+    if (!field) return;
+    const container = document.getElementById(`field-${field}`);
+    if (!container) return;
+    const visibleChild = [...container.querySelectorAll<HTMLElement>('input, select, textarea, button')].find((el) => el.offsetParent !== null);
+    const target = container.matches('input, select, textarea') ? container : (visibleChild ?? container);
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    target.focus({ preventScroll: true });
+    target.classList.add(...FIELD_HIGHLIGHT_CLASSES);
+    router.replace(`/edit-profile?tab=${tab}`);
+    const timer = setTimeout(() => target.classList.remove(...FIELD_HIGHLIGHT_CLASSES), 1800);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, tab]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -174,6 +216,7 @@ function EditProfileContent() {
         religion: form.religion || undefined,
         heightCm: form.heightCm ? Number(form.heightCm) : undefined,
         maritalStatus: form.maritalStatus,
+        profileCreatedBy: form.profileCreatedBy || undefined,
         fatherOccupation: form.fatherOccupation || undefined,
         motherOccupation: form.motherOccupation || undefined,
         siblingsCount: form.siblingsCount !== '' ? Number(form.siblingsCount) : undefined,
@@ -188,7 +231,6 @@ function EditProfileContent() {
         hobbies: form.hobbies || undefined,
         familyFinancialStatus: form.familyFinancialStatus || undefined,
         bodyType: form.bodyType || undefined,
-        marriageTimeline: form.marriageTimeline || undefined,
         partnerPreferences: form.partnerPreferences || undefined,
       } as never,
       {
@@ -233,34 +275,39 @@ function EditProfileContent() {
 
       {tab === 'basic' && (
         <div className="flex flex-col gap-4">
-          <Input label={t('auth.register.name')} required placeholder="e.g. Ziaul Haque" value={form.name} onChange={(e) => set('name', e.target.value)} />
+          <Input id="field-name" label={t('auth.register.name')} required placeholder="e.g. Ziaul Haque" value={form.name} onChange={(e) => set('name', e.target.value)} />
           <Input
             label={t('editProfile.age')}
             type="number"
             value={currentUser?.dob ? String(calcAge(currentUser.dob)) : ''}
             disabled
           />
-          <SearchableSelect
-            label={t('auth.register.district')}
-            placeholder={t('auth.register.selectDistrict')}
-            value={form.district}
-            onChange={(next) => {
-              set('district', next);
-              set('subDistrict', '');
-            }}
-            options={districts?.map((d) => d.name) ?? []}
-          />
-          <SearchableSelect
-            label={t('auth.register.subDistrict')}
-            placeholder={t('auth.register.selectSubDistrict')}
-            value={form.subDistrict}
-            onChange={(next) => set('subDistrict', next)}
-            disabled={!form.district}
-            options={upazilas ?? []}
-          />
-          <Input label={t('profileDetail.education')} placeholder="e.g. Bachelor's in CSE" value={form.education} onChange={(e) => set('education', e.target.value)} />
-          <Input label={t('profileDetail.profession')} placeholder="e.g. Software Engineer" value={form.profession} onChange={(e) => set('profession', e.target.value)} />
+          <div id="field-district">
+            <SearchableSelect
+              label={t('auth.register.district')}
+              placeholder={t('auth.register.selectDistrict')}
+              value={form.district}
+              onChange={(next) => {
+                set('district', next);
+                set('subDistrict', '');
+              }}
+              options={districts?.map((d) => d.name) ?? []}
+            />
+          </div>
+          <div id="field-subDistrict">
+            <SearchableSelect
+              label={t('auth.register.subDistrict')}
+              placeholder={t('auth.register.selectSubDistrict')}
+              value={form.subDistrict}
+              onChange={(next) => set('subDistrict', next)}
+              disabled={!form.district}
+              options={upazilas ?? []}
+            />
+          </div>
+          <Input id="field-education" label={t('profileDetail.education')} placeholder="e.g. Bachelor's in CSE" value={form.education} onChange={(e) => set('education', e.target.value)} />
+          <Input id="field-profession" label={t('profileDetail.profession')} placeholder="e.g. Software Engineer" value={form.profession} onChange={(e) => set('profession', e.target.value)} />
           <Select
+            id="field-maritalStatus"
             label={t('profileDetail.maritalStatus')}
             value={form.maritalStatus}
             onChange={(e) => set('maritalStatus', e.target.value as MaritalStatus)}
@@ -271,17 +318,31 @@ function EditProfileContent() {
               </option>
             ))}
           </Select>
-          <Input label={t('editProfile.motherTongue')} placeholder="e.g. Bangla" value={form.motherTongue} onChange={(e) => set('motherTongue', e.target.value)} />
-          <Input label={t('editProfile.englishComfort')} placeholder="e.g. Fluent, Basic" value={form.englishComfort} onChange={(e) => set('englishComfort', e.target.value)} />
-          <Input label={t('editProfile.residencyStatus')} placeholder="e.g. Local, Permanent Resident" value={form.residencyStatus} onChange={(e) => set('residencyStatus', e.target.value)} />
-          <Input label={t('editProfile.growUpIn')} placeholder="e.g. Dhaka, Bangladesh" value={form.growUpIn} onChange={(e) => set('growUpIn', e.target.value)} />
+          <Select
+            id="field-profileCreatedBy"
+            label={t('auth.register.profileCreatedBy')}
+            placeholder="—"
+            value={form.profileCreatedBy}
+            onChange={(e) => set('profileCreatedBy', e.target.value as ProfileCreatedBy)}
+          >
+            {PROFILE_CREATED_BY_OPTIONS.map((v) => (
+              <option key={v} value={v}>
+                {t(`auth.register.profileCreatedBy${v.charAt(0).toUpperCase()}${v.slice(1)}`)}
+              </option>
+            ))}
+          </Select>
+          <Input id="field-motherTongue" label={t('editProfile.motherTongue')} placeholder="e.g. Bangla" value={form.motherTongue} onChange={(e) => set('motherTongue', e.target.value)} />
+          <Input id="field-englishComfort" label={t('editProfile.englishComfort')} placeholder="e.g. Fluent, Basic" value={form.englishComfort} onChange={(e) => set('englishComfort', e.target.value)} />
+          <Input id="field-residencyStatus" label={t('editProfile.residencyStatus')} placeholder="e.g. Local, Permanent Resident" value={form.residencyStatus} onChange={(e) => set('residencyStatus', e.target.value)} />
+          <Input id="field-growUpIn" label={t('editProfile.growUpIn')} placeholder="e.g. Dhaka, Bangladesh" value={form.growUpIn} onChange={(e) => set('growUpIn', e.target.value)} />
           <Input
+            id="field-collegeUniversity"
             label={t('editProfile.collegeUniversity')}
             placeholder="e.g. University of Dhaka, BUET, NSU"
             value={form.collegeUniversity}
             onChange={(e) => set('collegeUniversity', e.target.value)}
           />
-          <div className="flex flex-col gap-1.5">
+          <div id="field-bio" className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-[var(--color-text-muted)]">{t('editProfile.aboutHer')}</label>
             <textarea
               value={form.bio}
@@ -298,31 +359,32 @@ function EditProfileContent() {
 
       {tab === 'personal' && (
         <div className="flex flex-col gap-4">
-          <Input label={t('profileDetail.religion')} placeholder="e.g. Islam" value={form.religion} onChange={(e) => set('religion', e.target.value)} />
-          <Input label={t('profileDetail.height')} type="number" placeholder="e.g. 170" value={form.heightCm} onChange={(e) => set('heightCm', e.target.value)} />
-          <Input label={t('profileDetail.fatherOccupation')} placeholder="e.g. Retired Govt. Officer" value={form.fatherOccupation} onChange={(e) => set('fatherOccupation', e.target.value)} />
-          <Input label={t('profileDetail.motherOccupation')} placeholder="e.g. Homemaker" value={form.motherOccupation} onChange={(e) => set('motherOccupation', e.target.value)} />
+          <Input id="field-religion" label={t('profileDetail.religion')} placeholder="e.g. Islam" value={form.religion} onChange={(e) => set('religion', e.target.value)} />
+          <HeightSelect id="field-heightCm" label={t('profileDetail.height')} valueCm={form.heightCm} onChange={(cm) => set('heightCm', cm)} />
+          <Input id="field-fatherOccupation" label={t('profileDetail.fatherOccupation')} placeholder="e.g. Retired Govt. Officer" value={form.fatherOccupation} onChange={(e) => set('fatherOccupation', e.target.value)} />
+          <Input id="field-motherOccupation" label={t('profileDetail.motherOccupation')} placeholder="e.g. Homemaker" value={form.motherOccupation} onChange={(e) => set('motherOccupation', e.target.value)} />
+          <Input id="field-siblingsCount" label={t('profileDetail.siblings')} type="number" placeholder="e.g. 3" value={form.siblingsCount} onChange={(e) => set('siblingsCount', e.target.value)} />
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t('browse.gateMissing.numberOfSisters')} type="number" placeholder="e.g. 1" value={form.numberOfSisters} onChange={(e) => set('numberOfSisters', e.target.value)} />
-            <Input label={t('browse.gateMissing.numberOfBrothers')} type="number" placeholder="e.g. 2" value={form.numberOfBrothers} onChange={(e) => set('numberOfBrothers', e.target.value)} />
+            <Input id="field-numberOfSisters" label={t('browse.gateMissing.numberOfSisters')} type="number" placeholder="e.g. 1" value={form.numberOfSisters} onChange={(e) => set('numberOfSisters', e.target.value)} />
+            <Input id="field-numberOfBrothers" label={t('browse.gateMissing.numberOfBrothers')} type="number" placeholder="e.g. 2" value={form.numberOfBrothers} onChange={(e) => set('numberOfBrothers', e.target.value)} />
           </div>
-          <Select label={t('profileDetail.bloodGroup')} placeholder="—" value={form.bloodGroup} onChange={(e) => set('bloodGroup', e.target.value as BloodGroup)}>
+          <Select id="field-bloodGroup" label={t('profileDetail.bloodGroup')} placeholder="—" value={form.bloodGroup} onChange={(e) => set('bloodGroup', e.target.value as BloodGroup)}>
             {(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const).map((bg) => (
               <option key={bg} value={bg}>
                 {bg}
               </option>
             ))}
           </Select>
-          <Select label={t('profileDetail.complexion')} placeholder="—" value={form.complexion} onChange={(e) => set('complexion', e.target.value as Complexion)}>
+          <Select id="field-complexion" label={t('profileDetail.complexion')} placeholder="—" value={form.complexion} onChange={(e) => set('complexion', e.target.value as Complexion)}>
             {(['fair', 'medium', 'dark'] as const).map((c) => (
               <option key={c} value={c}>
                 {t(`profileDetail.complexion${c.charAt(0).toUpperCase()}${c.slice(1)}`)}
               </option>
             ))}
           </Select>
-          <Input label={t('profileDetail.monthlyIncome')} type="number" placeholder="e.g. 50000" value={form.monthlyIncome} onChange={(e) => set('monthlyIncome', e.target.value)} />
-          <Input label={t('profileDetail.company')} placeholder="e.g. ABC Ltd." value={form.companyName} onChange={(e) => set('companyName', e.target.value)} />
-          <div className="flex flex-col gap-1.5">
+          <Input id="field-monthlyIncome" label={t('profileDetail.monthlyIncome')} type="number" placeholder="e.g. 50000" value={form.monthlyIncome} onChange={(e) => set('monthlyIncome', e.target.value)} />
+          <Input id="field-companyName" label={t('profileDetail.company')} placeholder="e.g. ABC Ltd." value={form.companyName} onChange={(e) => set('companyName', e.target.value)} />
+          <div id="field-presentAddress" className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-[var(--color-text-muted)]">{t('profileDetail.presentAddress')}</label>
             <textarea
               value={form.presentAddress}
@@ -332,7 +394,7 @@ function EditProfileContent() {
               className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
             />
           </div>
-          <div className="flex flex-col gap-1.5">
+          <div id="field-permanentAddress" className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-[var(--color-text-muted)]">{t('profileDetail.permanentAddress')}</label>
             <textarea
               value={form.permanentAddress}
@@ -347,7 +409,7 @@ function EditProfileContent() {
 
       {tab === 'lifestyle' && (
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
+          <div id="field-hobbies" className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-[var(--color-text-muted)]">{t('editProfile.hobbies')}</label>
             <textarea
               value={form.hobbies}
@@ -357,14 +419,19 @@ function EditProfileContent() {
               className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
             />
           </div>
-          <Input label={t('editProfile.familyFinancialStatus')} placeholder="e.g. Middle class" value={form.familyFinancialStatus} onChange={(e) => set('familyFinancialStatus', e.target.value)} />
-          <Input label={t('editProfile.bodyType')} placeholder="e.g. Slim, Athletic, Average" value={form.bodyType} onChange={(e) => set('bodyType', e.target.value)} />
-          <Input label={t('editProfile.marriageTimeline')} placeholder="e.g. Within 1 year" value={form.marriageTimeline} onChange={(e) => set('marriageTimeline', e.target.value)} />
+          <Input id="field-familyFinancialStatus" label={t('editProfile.familyFinancialStatus')} placeholder="e.g. Middle class" value={form.familyFinancialStatus} onChange={(e) => set('familyFinancialStatus', e.target.value)} />
+          <Select id="field-bodyType" label={t('editProfile.bodyType')} placeholder="—" value={form.bodyType} onChange={(e) => set('bodyType', e.target.value)}>
+            {BODY_TYPE_OPTIONS.map(({ value, labelKey }) => (
+              <option key={value} value={value}>
+                {t(labelKey)}
+              </option>
+            ))}
+          </Select>
         </div>
       )}
 
       {tab === 'partner' && (
-        <div className="flex flex-col gap-1.5">
+        <div id="field-partnerPreferences" className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-[var(--color-text-muted)]">{t('editProfile.partnerPreferences')}</label>
           <textarea
             value={form.partnerPreferences}
@@ -387,6 +454,63 @@ export default function EditProfilePage() {
     <Suspense fallback={null}>
       <EditProfileContent />
     </Suspense>
+  );
+}
+
+function HeightSelect({
+  id,
+  label,
+  valueCm,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  valueCm: string;
+  onChange: (cm: string) => void;
+}) {
+  const { t } = useLanguage();
+  const cmNumber = valueCm !== '' ? Number(valueCm) : null;
+  const { feet, inches } = cmNumber != null ? cmToFeetInches(cmNumber) : { feet: NaN, inches: NaN };
+  const inchOptions = Array.from({ length: 12 }, (_, i) => i).filter((inch) => {
+    const cm = feetInchesToCm(Number.isNaN(feet) ? HEIGHT_FEET_OPTIONS[0] : feet, inch);
+    return cm >= HEIGHT_MIN_CM && cm <= HEIGHT_MAX_CM;
+  });
+
+  function update(nextFeet: number, nextInches: number) {
+    const cm = feetInchesToCm(nextFeet, nextInches);
+    onChange(Number.isNaN(nextFeet) || Number.isNaN(nextInches) ? '' : String(Math.min(Math.max(cm, HEIGHT_MIN_CM), HEIGHT_MAX_CM)));
+  }
+
+  return (
+    <div id={id} className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-[var(--color-text-muted)]">{label}</label>
+      <div className="grid grid-cols-2 gap-3">
+        <Select
+          aria-label={t('editProfile.heightFeet')}
+          placeholder={t('editProfile.heightFeet')}
+          value={Number.isNaN(feet) ? '' : String(feet)}
+          onChange={(e) => update(Number(e.target.value), Number.isNaN(inches) ? 0 : inches)}
+        >
+          {HEIGHT_FEET_OPTIONS.map((ft) => (
+            <option key={ft} value={ft}>
+              {ft} {t('editProfile.feet')}
+            </option>
+          ))}
+        </Select>
+        <Select
+          aria-label={t('editProfile.heightInches')}
+          placeholder={t('editProfile.heightInches')}
+          value={Number.isNaN(inches) ? '' : String(inches)}
+          onChange={(e) => update(Number.isNaN(feet) ? HEIGHT_FEET_OPTIONS[0] : feet, Number(e.target.value))}
+        >
+          {inchOptions.map((inch) => (
+            <option key={inch} value={inch}>
+              {inch} {t('editProfile.inch')}
+            </option>
+          ))}
+        </Select>
+      </div>
+    </div>
   );
 }
 
@@ -421,7 +545,7 @@ function PhotosTab() {
             </button>
           </div>
         ))}
-        <label className="flex h-28 w-28 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--color-border)] text-[var(--color-text-faint)]">
+        <label id="field-photo" className="flex h-28 w-28 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--color-border)] text-[var(--color-text-faint)]">
           <Camera size={20} />
           <span className="text-xs">{t('editProfile.addPhoto')}</span>
           <input
