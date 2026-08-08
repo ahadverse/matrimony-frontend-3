@@ -186,6 +186,7 @@ export interface PublicStats {
   statDistrictsCovered: string;
   statAverageRating: string;
   statProfilesReviewedPercent: string;
+  whatsappNumber: string | null;
 }
 
 export interface ConversationOtherUser {
