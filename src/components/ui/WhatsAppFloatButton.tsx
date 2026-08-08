@@ -2,16 +2,18 @@
 
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
-
-// Placeholder — swap for the real business number before launch.
-const WHATSAPP_NUMBER = '8801700000000';
+import { usePublicStats } from '@/lib/queries';
 
 export function WhatsAppFloatButton() {
   const { t } = useLanguage();
+  const { data } = usePublicStats();
+  const whatsappDigits = data?.whatsappNumber?.replace(/\D/g, '');
+
+  if (!whatsappDigits) return null;
 
   return (
     <motion.a
-      href={`https://wa.me/${WHATSAPP_NUMBER}`}
+      href={`https://wa.me/${whatsappDigits}`}
       target="_blank"
       rel="noopener noreferrer"
       aria-label={t('common.whatsappChat')}
