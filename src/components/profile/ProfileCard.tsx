@@ -3,12 +3,14 @@ import { BadgeCheck, Lock, Sparkles } from 'lucide-react';
 import clsx from 'clsx';
 import { Card } from '@/components/ui/Card';
 import { resolveUploadUrl } from '@/lib/api-client';
+import { formatLocation } from '@/lib/geo';
+import type { LocationFields } from '@/lib/types';
 
 interface ProfileCardProps {
   userId: string;
   name: string;
-  district: string;
-  subDistrict?: string | null;
+  /** Any payload carrying the location fields — the card formats it itself. */
+  location: Partial<LocationFields>;
   age?: number | null;
   photoUrl?: string | null;
   isVerified?: boolean;
@@ -22,8 +24,7 @@ interface ProfileCardProps {
 export function ProfileCard({
   userId,
   name,
-  district,
-  subDistrict,
+  location,
   age,
   photoUrl,
   isVerified,
@@ -70,10 +71,7 @@ export function ProfileCard({
           </span>
           {isVerified && <BadgeCheck size={14} className="shrink-0 text-[var(--color-verified)]" />}
         </Link>
-        <p className="text-xs text-[var(--color-text-faint)]">
-          {district}
-          {subDistrict ? ` · ${subDistrict}` : ''}
-        </p>
+        <p className="text-xs text-[var(--color-text-faint)]">{formatLocation(location)}</p>
         {meta && <p className="text-xs text-[var(--color-text-muted)]">{meta}</p>}
         {footer && <div className="mt-2">{footer}</div>}
       </div>

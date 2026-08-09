@@ -5,6 +5,11 @@ export type EditProfileTab = 'basic' | 'photos' | 'personal' | 'lifestyle' | 'pa
  * straight to it. */
 export const PROFILE_FIELD_TABS: Record<string, EditProfileTab> = {
   name: 'basic',
+  country: 'basic',
+  state: 'basic',
+  city: 'basic',
+  zip: 'basic',
+  // Kept so a profile last scored before worldwide locations still deep-links.
   district: 'basic',
   subDistrict: 'basic',
   bio: 'basic',

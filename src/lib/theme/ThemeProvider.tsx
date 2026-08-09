@@ -5,7 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 export type ThemePreference = 'light' | 'dark' | 'system';
 type ResolvedTheme = 'light' | 'dark';
 
-const STORAGE_KEY = 'biyekori_theme';
+const STORAGE_KEY = 'biyekoralagbe_theme';
 
 interface ThemeContextValue {
   theme: ThemePreference;

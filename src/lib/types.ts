@@ -38,6 +38,23 @@ export interface District {
   division: string;
 }
 
+/**
+ * Location fields returned on every profile-bearing payload.
+ *
+ * `district`/`subDistrict` are the pre-worldwide Bangladesh pair; the backend
+ * keeps them mirrored to `state`/`city` for the admin panel and the older
+ * frontends. Read `country`/`state`/`city` here — `lib/geo.ts` has the
+ * formatters, which fall back to the legacy pair when needed.
+ */
+export interface LocationFields {
+  district: string | null;
+  subDistrict: string | null;
+  country: string | null;
+  countryCode: string | null;
+  state: string | null;
+  city: string | null;
+}
+
 export interface Photo {
   id: string;
   url: string;
@@ -46,11 +63,11 @@ export interface Photo {
   order: number;
 }
 
-export interface MyProfile {
+export interface MyProfile extends LocationFields {
   id: string;
   name: string;
-  district: string;
-  subDistrict: string | null;
+  /** Only ever returned for your own profile — never on someone else's card. */
+  zip: string | null;
   bio: string | null;
   profession: string | null;
   education: string | null;
@@ -87,12 +104,10 @@ export interface MyProfile {
   spotlightUntil: string | null;
 }
 
-export interface BrowseCard {
+export interface BrowseCard extends LocationFields {
   id: string;
   name: string;
   age: number | null;
-  district: string;
-  subDistrict: string | null;
   profession: string | null;
   education: string | null;
   religion: string | null;
@@ -102,11 +117,9 @@ export interface BrowseCard {
   isVerified: boolean;
 }
 
-export interface LikedYouCard {
+export interface LikedYouCard extends LocationFields {
   userId: string;
   name: string;
-  district: string;
-  subDistrict: string | null;
   superliked: boolean;
   unlocked: boolean;
   photoUrl: string | null;
@@ -114,11 +127,9 @@ export interface LikedYouCard {
   isVerified: boolean;
 }
 
-export interface MyLikeCard {
+export interface MyLikeCard extends LocationFields {
   userId: string;
   name: string;
-  district: string;
-  subDistrict: string | null;
   distanceKm: number | null;
   photoUrl: string | null;
   superliked: boolean;
@@ -126,21 +137,17 @@ export interface MyLikeCard {
   isVerified: boolean;
 }
 
-export interface ProfilePreview {
+export interface ProfilePreview extends LocationFields {
   userId: string;
   name: string;
-  district: string;
-  subDistrict: string | null;
   photoUrl: string | null;
   isVerified: boolean;
 }
 
-export interface ProfileDetail {
+export interface ProfileDetail extends LocationFields {
   userId: string;
   name: string;
   age: number | null;
-  district: string;
-  subDistrict: string | null;
   bio: string | null;
   profession: string | null;
   education: string | null;
@@ -195,6 +202,8 @@ export interface ConversationOtherUser {
   photoUrl: string | null;
   isVerified: boolean;
   district: string | null;
+  city: string | null;
+  state: string | null;
 }
 
 export interface Conversation {

@@ -7,6 +7,7 @@ import type { BrowseCard } from '@/lib/types';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { resolveUploadUrl } from '@/lib/api-client';
 import { formatHeight } from '@/lib/height';
+import { formatLocation } from '@/lib/geo';
 import { useSwipeGesture, type SwipeAction } from './useSwipeGesture';
 import { SwipeStamp } from './SwipeStamp';
 
@@ -167,7 +168,7 @@ export function SwipeCard({ card, isTop, stackIndex, onSwipe }: SwipeCardProps) 
           <div className="mt-0.5 flex items-center gap-1.5">
             <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-surface)] px-2.5 py-1 text-xs text-[var(--color-text-faint)]">
               <MapPin size={12} />
-              {card.subDistrict ? `${card.subDistrict}, ${card.district}` : card.district}
+              {formatLocation(card)}
             </span>
             {card.distanceKm != null && (
               <span className="rounded-full bg-[var(--color-surface)] px-2.5 py-1 text-xs text-[var(--color-text-faint)]">

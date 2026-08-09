@@ -21,7 +21,7 @@ const hindSiliguri = Hind_Siliguri({
 });
 
 export const metadata: Metadata = {
-  title: "Biye Kori — Find Your Match",
+  title: "BiyeKoraLagbe — Find Your Match",
   description: "A modern, privacy-first matrimony platform for Bangladesh.",
 };
 
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 const NO_FLASH_THEME_SCRIPT = `
 (function () {
   var stored = null;
-  try { stored = window.localStorage.getItem('biyekori_theme'); } catch (e) {}
+  try { stored = window.localStorage.getItem('biyekoralagbe_theme'); } catch (e) {}
   var resolved = (stored === 'light' || stored === 'dark')
     ? stored
     : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');

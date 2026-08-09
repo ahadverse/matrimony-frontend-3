@@ -8,7 +8,7 @@ export type Locale = 'en' | 'bn';
 type Dictionary = typeof en;
 
 const dictionaries: Record<Locale, Dictionary> = { en, bn };
-const STORAGE_KEY = 'biyekori_locale';
+const STORAGE_KEY = 'biyekoralagbe_locale';
 
 interface LanguageContextValue {
   locale: Locale;

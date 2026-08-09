@@ -1,6 +1,7 @@
 import { Card } from '@/components/ui/Card';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { useLiveActivity } from '@/lib/queries';
+import { formatLocation } from '@/lib/geo';
 
 export function LiveActivityList() {
   const { t } = useLanguage();
@@ -21,7 +22,7 @@ export function LiveActivityList() {
               {u.name}
               {u.age ? `, ${u.age}` : ''}
             </span>
-            <span className="text-xs text-[var(--color-text-faint)]">{u.district}</span>
+            <span className="text-xs text-[var(--color-text-faint)]">{formatLocation(u)}</span>
           </div>
         ))}
       </div>

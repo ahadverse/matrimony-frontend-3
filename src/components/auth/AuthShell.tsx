@@ -24,7 +24,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
         aria-hidden
       />
       <Link href="/" className="relative z-10 mb-8 font-display text-2xl gradient-text">
-        Biye Kori
+        BiyeKoraLagbe
       </Link>
       <div className="surface-card ring-1 ring-inset ring-[var(--color-gold)]/20 relative z-10 w-full max-w-sm rounded-2xl p-6 shadow-xl sm:p-8">
         {children}

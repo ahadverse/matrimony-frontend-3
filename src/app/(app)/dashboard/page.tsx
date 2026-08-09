@@ -16,6 +16,7 @@ import { ProfileViewsSection } from '@/components/dashboard/ProfileViewsSection'
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { useConversations, useMyProfile } from '@/lib/queries';
 import { resolveUploadUrl } from '@/lib/api-client';
+import { formatLocation } from '@/lib/geo';
 
 export default function DashboardPage() {
   const { t } = useLanguage();
@@ -79,7 +80,7 @@ export default function DashboardPage() {
                     <BadgeCheck size={14} className="shrink-0 text-[var(--color-verified)]" aria-label={t('common.verified')} />
                   )}
                 </p>
-                <p className="text-xs text-[var(--color-text-faint)]">{firstMatch.otherUser?.district}</p>
+                <p className="text-xs text-[var(--color-text-faint)]">{formatLocation(firstMatch.otherUser)}</p>
               </div>
             </Card>
           </div>

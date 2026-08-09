@@ -15,10 +15,10 @@ const stories = [
     names: 'Arif & Nadia',
     photo: 'https://loremflickr.com/1200/700/couple?lock=101',
     tags: ['Islam', 'Dhaka & Chattogram', 'February 2026'],
-    metOnMarriedLater: 'Met on Biyekori — married 3 months later',
+    metOnMarriedLater: 'Met on BiyeKoraLagbe — married 3 months later',
     quoteBn: '"আমি বিশ্বাস করতে পারিনি এত সহজে এবং নিরাপদে জীবনসঙ্গী খুঁজে পাওয়া যায়।"',
     quoteEn: '"I never believed finding a life partner could be this easy and this safe."',
-    body: "Arif had tried two other platforms before Biyekori. Both times, the conversation went nowhere — no family involvement, no structure, no sense of seriousness. He almost stopped looking. Then his younger sister suggested Biyekori.",
+    body: "Arif had tried two other platforms before BiyeKoraLagbe. Both times, the conversation went nowhere — no family involvement, no structure, no sense of seriousness. He almost stopped looking. Then his younger sister suggested BiyeKoraLagbe.",
     journey: [
       { title: 'The Match', body: "Arif noticed Nadia's profile had an AI match score of 91%. She had listed family values and deen as her top priorities — exactly what he was looking for, he sent an interest that evening." },
       { title: 'Families Connect', body: "Nadia's mother reviewed the biodata PDF her daughter had sent. She called it 'the most organized proposal' she had seen. Through Guardian Mode, both families started talking on the platform." },
@@ -30,14 +30,14 @@ const stories = [
     names: 'Raihan & Sumaiya',
     photo: 'https://loremflickr.com/1200/700/couple?lock=202',
     tags: ['Islam', 'Sylhet & Dhaka', 'March 2026'],
-    metOnMarriedLater: 'Met on Biyekori — married 4 months later',
+    metOnMarriedLater: 'Met on BiyeKoraLagbe — married 4 months later',
     quoteBn: '"পরিবার সবসময় পাশে ছিল - প্রতিটি ধাপে। এটাই বিয়েকরিকে অন্যদের থেকে আলাদা করে তুলেছে।"',
-    quoteEn: "\"Our families were with us at every step. That's what made Biyekori different from everything else.\"",
+    quoteEn: "\"Our families were with us at every step. That's what made BiyeKoraLagbe different from everything else.\"",
     body: "Sumaiya's elder brother was managing her profile. She had asked him to — she felt safer that way. She shortlisted seven profiles after two weeks. Raihan was the first one the family agreed to contact.",
     journey: [
       { title: 'Guardian Shortlist', body: "Sumaiya's brother shortlisted Raihan based on the compatibility score and his verified profession. He sent an interest on her behalf through Guardian Mode." },
       { title: 'Biodata to Family', body: 'Both families downloaded the biodata PDFs and shared them with aunts and uncles over WhatsApp. The feedback from both sides was positive within days.' },
-      { title: 'Supervised Video Call', body: "A video call was arranged through Biyekori. Sumaiya's mother sat beside her, Raihan's father joined from his side. Both families spoke directly for the first time." },
+      { title: 'Supervised Video Call', body: "A video call was arranged through BiyeKoraLagbe. Sumaiya's mother sat beside her, Raihan's father joined from his side. Both families spoke directly for the first time." },
       { title: 'Nikah in Sylhet', body: 'The wedding took place in Sylhet in March 2026, with a reception in Dhaka the next week. Both families say they still talk daily.' },
     ],
   },
@@ -45,15 +45,15 @@ const stories = [
     names: 'Imran & Farida',
     photo: 'https://loremflickr.com/1200/700/couple?lock=303',
     tags: ['Islam', 'London & Dhaka', 'April 2026'],
-    metOnMarriedLater: 'Met on Biyekori — married 3 months later',
+    metOnMarriedLater: 'Met on BiyeKoraLagbe — married 3 months later',
     quoteBn: '"প্রবাসে থেকে দেশের কাউকে বিয়ে করা কঠিন মনে হতো - বিয়েকরি সেই দূরত্ব ঘুচিয়ে দিয়েছে।"',
     quoteEn: 'Finding someone from home while living in London felt different from anywhere else.',
-    body: "Imran had been looking to marry someone from Bangladesh — someone who shared his roots, his religion, his idea of family. Every platform he tried felt either too casual or too India-focused. A friend from Sylhet sent him a Biyekori link.",
+    body: "Imran had been looking to marry someone from Bangladesh — someone who shared his roots, his religion, his idea of family. Every platform he tried felt either too casual or too India-focused. A friend from Sylhet sent him a BiyeKoraLagbe link.",
     journey: [
       { title: 'A Match From Abroad', body: "Imran browsed profiles from Bangladesh while based in London. Within a week he found Farida's profile. She was a teacher, from Dhaka, and he sent an interest the same night." },
       { title: 'Across Time Zones', body: "They exchanged messages on the platform across a five-hour time difference. Farida's parents reviewed Imran's full biodata and spoke to parents in Sylhet by phone." },
       { title: 'Imran Flies to Dhaka', body: 'In January 2026, Imran flew home. Both families met in Dhaka over four days. Farida\'s father said "we felt like we already knew him."' },
-      { title: 'Wedding & New Beginning', body: 'The nikah was in April 2026. Farida joined Imran in London two months later. Imran says: "Biyekori made it easy to find someone from home, wherever you\'re living."' },
+      { title: 'Wedding & New Beginning', body: 'The nikah was in April 2026. Farida joined Imran in London two months later. Imran says: "BiyeKoraLagbe made it easy to find someone from home, wherever you\'re living."' },
     ],
   },
 ] as const;
@@ -143,7 +143,7 @@ export default function SuccessStoriesPage() {
       <section className="gradient-primary px-6 py-16 text-center text-[var(--color-on-primary)]">
         <FadeIn className="mx-auto max-w-xl">
           <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-on-primary)]/70">Share your story</span>
-          <h2 className="font-display mt-3 text-2xl sm:text-3xl">Did you find your match on Biyekori?</h2>
+          <h2 className="font-display mt-3 text-2xl sm:text-3xl">Did you find your match on BiyeKoraLagbe?</h2>
           <p className="mt-3 text-[var(--color-on-primary)]/85">
             We would love to share your story. Names are always changed. Your story could give hope to someone still
             searching.

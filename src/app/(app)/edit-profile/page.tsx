@@ -8,7 +8,7 @@ import { BadgeCheck, Camera, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { LocationPicker } from '@/components/ui/LocationPicker';
 import { Button } from '@/components/ui/Button';
 import { Tabs } from '@/components/ui/Tabs';
 import { CompletionPanel } from '@/components/profile/CompletionPanel';
@@ -16,11 +16,9 @@ import { api, ApiError, resolveUploadUrl } from '@/lib/api-client';
 import {
   useCurrentUser,
   useDeletePhoto,
-  useDistricts,
   useMyProfile,
   useMyVerification,
   useSubmitVerification,
-  useUpazilas,
   useUpdateBasics,
   useUploadPhoto,
   useUpsertMyProfile,
@@ -29,6 +27,7 @@ import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { MAX_IMAGE_SIZE_MB, validateImageFile } from '@/lib/fileValidation';
 import type { BloodGroup, Complexion, MaritalStatus, MyProfile, ProfileCreatedBy } from '@/lib/types';
 import type { EditProfileTab } from '@/lib/profileFieldMap';
+import { EMPTY_LOCATION, type ProfileLocation } from '@/lib/geo';
 import { cmToFeetInches, feetInchesToCm } from '@/lib/height';
 
 // Backend clamps heightCm to [120, 220] — keep dropdown options within that range.
@@ -51,8 +50,7 @@ const FIELD_HIGHLIGHT_CLASSES = ['ring-2', 'ring-[var(--color-primary)]', 'ring-
 
 interface FormState {
   name: string;
-  district: string;
-  subDistrict: string;
+  location: ProfileLocation;
   profession: string;
   education: string;
   motherTongue: string;
@@ -85,8 +83,7 @@ interface FormState {
 function emptyForm(): FormState {
   return {
     name: '',
-    district: '',
-    subDistrict: '',
+    location: EMPTY_LOCATION,
     profession: '',
     education: '',
     motherTongue: '',
@@ -120,8 +117,16 @@ function emptyForm(): FormState {
 function fillForm(profile: MyProfile): FormState {
   return {
     name: profile.name ?? '',
-    district: profile.district ?? '',
-    subDistrict: profile.subDistrict ?? '',
+    location: {
+      // Profiles created before worldwide locations have only the legacy pair,
+      // which was Bangladesh-only by definition — naming that country keeps the
+      // cascade populated so the old district/upazila survive as state/city.
+      country: profile.country ?? (profile.district ? 'Bangladesh' : ''),
+      countryCode: profile.countryCode ?? (profile.district ? 'BD' : ''),
+      state: profile.state ?? profile.district ?? '',
+      city: profile.city ?? profile.subDistrict ?? '',
+      zip: profile.zip ?? '',
+    },
     profession: profile.profession ?? '',
     education: profile.education ?? '',
     motherTongue: profile.motherTongue ?? '',
@@ -161,12 +166,10 @@ function EditProfileContent() {
 
   const { data: profile } = useMyProfile();
   const { data: currentUser } = useCurrentUser();
-  const { data: districts } = useDistricts();
   const upsert = useUpsertMyProfile();
   const updateBasics = useUpdateBasics();
 
   const [form, setForm] = useState<FormState>(emptyForm());
-  const { data: upazilas } = useUpazilas(form.district || null);
 
   useEffect(() => {
     if (profile) setForm(fillForm(profile));
@@ -203,8 +206,11 @@ function EditProfileContent() {
     upsert.mutate(
       {
         name: form.name,
-        district: form.district,
-        subDistrict: form.subDistrict || undefined,
+        country: form.location.country,
+        countryCode: form.location.countryCode || undefined,
+        state: form.location.state || undefined,
+        city: form.location.city || undefined,
+        zip: form.location.zip || undefined,
         profession: form.profession || undefined,
         education: form.education || undefined,
         motherTongue: form.motherTongue || undefined,
@@ -282,28 +288,12 @@ function EditProfileContent() {
             value={currentUser?.dob ? String(calcAge(currentUser.dob)) : ''}
             disabled
           />
-          <div id="field-district">
-            <SearchableSelect
-              label={t('auth.register.district')}
-              placeholder={t('auth.register.selectDistrict')}
-              value={form.district}
-              onChange={(next) => {
-                set('district', next);
-                set('subDistrict', '');
-              }}
-              options={districts?.map((d) => d.name) ?? []}
-            />
-          </div>
-          <div id="field-subDistrict">
-            <SearchableSelect
-              label={t('auth.register.subDistrict')}
-              placeholder={t('auth.register.selectSubDistrict')}
-              value={form.subDistrict}
-              onChange={(next) => set('subDistrict', next)}
-              disabled={!form.district}
-              options={upazilas ?? []}
-            />
-          </div>
+          <LocationPicker
+            idPrefix="field"
+            required
+            value={form.location}
+            onChange={(next) => set('location', next)}
+          />
           <Input id="field-education" label={t('profileDetail.education')} placeholder="e.g. Bachelor's in CSE" value={form.education} onChange={(e) => set('education', e.target.value)} />
           <Input id="field-profession" label={t('profileDetail.profession')} placeholder="e.g. Software Engineer" value={form.profession} onChange={(e) => set('profession', e.target.value)} />
           <Select

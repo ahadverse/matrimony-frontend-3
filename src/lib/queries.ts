@@ -2,6 +2,7 @@
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './api-client';
+import type { GeoCountry, GeoState } from './geo';
 import type {
   BrowseCard,
   ChatMessage,
@@ -10,6 +11,7 @@ import type {
   District,
   Gender,
   LikedYouCard,
+  LocationFields,
   MaritalStatus,
   MyLikeCard,
   MyProfile,
@@ -47,8 +49,9 @@ export function useUpdateLocation() {
 }
 
 export interface BrowseFilters {
-  district?: string;
-  subDistrict?: string;
+  country?: string;
+  state?: string;
+  city?: string;
   education?: string;
   profession?: string;
   religion?: string;
@@ -57,20 +60,26 @@ export interface BrowseFilters {
   ageMax?: number;
 }
 
+/** Both browse queries send the identical filter set — built once here. */
+function browseParams(filters: BrowseFilters): URLSearchParams {
+  const params = new URLSearchParams();
+  if (filters.country) params.set('country', filters.country);
+  if (filters.state) params.set('state', filters.state);
+  if (filters.city) params.set('city', filters.city);
+  if (filters.education) params.set('education', filters.education);
+  if (filters.profession) params.set('profession', filters.profession);
+  if (filters.religion) params.set('religion', filters.religion);
+  if (filters.maritalStatus) params.set('maritalStatus', filters.maritalStatus);
+  if (filters.ageMin != null) params.set('ageMin', String(filters.ageMin));
+  if (filters.ageMax != null) params.set('ageMax', String(filters.ageMax));
+  return params;
+}
+
 export function useBrowseFeed(filters: BrowseFilters = {}, enabled = true) {
   return useQuery({
     queryKey: ['browse', filters],
     queryFn: () => {
-      const params = new URLSearchParams();
-      if (filters.district) params.set('district', filters.district);
-      if (filters.subDistrict) params.set('subDistrict', filters.subDistrict);
-      if (filters.education) params.set('education', filters.education);
-      if (filters.profession) params.set('profession', filters.profession);
-      if (filters.religion) params.set('religion', filters.religion);
-      if (filters.maritalStatus) params.set('maritalStatus', filters.maritalStatus);
-      if (filters.ageMin != null) params.set('ageMin', String(filters.ageMin));
-      if (filters.ageMax != null) params.set('ageMax', String(filters.ageMax));
-      const qs = params.toString();
+      const qs = browseParams(filters).toString();
       // No page/pageSize: the backend then returns a bare, already-shuffled
       // array (capped server-side) with already-swiped ids excluded, which is
       // exactly what the swipe deck wants — refetch() doubles as "load more".
@@ -99,15 +108,9 @@ export function useBrowseFeedInfinite(filters: BrowseFilters = {}, enabled = tru
   return useInfiniteQuery({
     queryKey: ['browse-infinite', filters],
     queryFn: ({ pageParam }) => {
-      const params = new URLSearchParams({ page: String(pageParam), pageSize: String(BROWSE_PAGE_SIZE) });
-      if (filters.district) params.set('district', filters.district);
-      if (filters.subDistrict) params.set('subDistrict', filters.subDistrict);
-      if (filters.education) params.set('education', filters.education);
-      if (filters.profession) params.set('profession', filters.profession);
-      if (filters.religion) params.set('religion', filters.religion);
-      if (filters.maritalStatus) params.set('maritalStatus', filters.maritalStatus);
-      if (filters.ageMin != null) params.set('ageMin', String(filters.ageMin));
-      if (filters.ageMax != null) params.set('ageMax', String(filters.ageMax));
+      const params = browseParams(filters);
+      params.set('page', String(pageParam));
+      params.set('pageSize', String(BROWSE_PAGE_SIZE));
       return api.get<BrowseFeedPage>(`swipes/browse?${params.toString()}`);
     },
     initialPageParam: 1,
@@ -118,11 +121,9 @@ export function useBrowseFeedInfinite(filters: BrowseFilters = {}, enabled = tru
   });
 }
 
-export interface FilteredCard {
+export interface FilteredCard extends LocationFields {
   userId: string;
   name: string;
-  district: string;
-  subDistrict: string | null;
   photoUrl: string | null;
   isVerified: boolean;
   filteredAt: string;
@@ -135,11 +136,9 @@ export function useFilteredProfiles() {
   });
 }
 
-export interface ShortlistCard {
+export interface ShortlistCard extends LocationFields {
   userId: string;
   name: string;
-  district: string;
-  subDistrict: string | null;
   photoUrl: string | null;
   isVerified: boolean;
   shortlistedAt: string;
@@ -168,10 +167,9 @@ export function useRemoveShortlist() {
   });
 }
 
-export interface ProfileViewer {
+export interface ProfileViewer extends LocationFields {
   userId: string;
   name: string;
-  district: string;
   photoUrl: string | null;
   viewedAt: string;
 }
@@ -183,11 +181,10 @@ export function useProfileViews() {
   });
 }
 
-export interface ActiveUser {
+export interface ActiveUser extends LocationFields {
   userId: string;
   name: string;
   age: number | null;
-  district: string;
   lastActiveAt: string;
 }
 
@@ -207,6 +204,55 @@ export function useActivateSpotlight() {
       queryClient.invalidateQueries({ queryKey: ['my-profile'] });
       queryClient.invalidateQueries({ queryKey: ['wallet'] });
     },
+  });
+}
+
+// The worldwide country/state/city data is static JSON under `public/geo`, not a
+// backend resource — so these fetch from our own origin rather than going through
+// `api`, which would prefix BACKEND_URL and attach a bearer token. Generated by
+// scripts/build-geo.mjs; see lib/geo.ts for the attribution.
+async function fetchGeo<T>(path: string, fallback: T): Promise<T> {
+  const res = await fetch(`/geo/${path}`);
+  // A country with no data upstream 404s; that is a legitimate "nothing to offer
+  // here" rather than an error, and LocationPicker handles the empty list.
+  if (res.status === 404) return fallback;
+  if (!res.ok) throw new Error(`Could not load /geo/${path} (${res.status})`);
+  return (await res.json()) as T;
+}
+
+// The dataset never changes between deploys, so it is fetched once per session
+// and never refetched or garbage-collected.
+const GEO_QUERY_OPTIONS = { staleTime: Infinity, gcTime: Infinity } as const;
+
+export function useCountries() {
+  return useQuery({
+    queryKey: ['geo', 'countries'],
+    queryFn: () => fetchGeo<GeoCountry[]>('countries.json', []),
+    ...GEO_QUERY_OPTIONS,
+  });
+}
+
+export function useStates(countryCode: string | null | undefined) {
+  return useQuery({
+    queryKey: ['geo', 'states', countryCode],
+    queryFn: () => fetchGeo<GeoState[]>(`states/${countryCode}.json`, []),
+    enabled: !!countryCode,
+    ...GEO_QUERY_OPTIONS,
+  });
+}
+
+/**
+ * Cities are stored one file per country, keyed by state, so switching between
+ * states within a country costs no extra request — the cached file is just
+ * re-indexed. Countries with no states at all keep their cities under `''`.
+ */
+export function useCities(countryCode: string | null | undefined, state: string | null | undefined) {
+  return useQuery({
+    queryKey: ['geo', 'cities', countryCode],
+    queryFn: () => fetchGeo<Record<string, string[]>>(`cities/${countryCode}.json`, {}),
+    enabled: !!countryCode,
+    select: (byState) => byState[state ?? ''] ?? [],
+    ...GEO_QUERY_OPTIONS,
   });
 }
 

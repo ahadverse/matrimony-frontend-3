@@ -9,12 +9,12 @@ import { MapPin, Camera, Check, Trash2, UserRound } from 'lucide-react';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { LocationPicker } from '@/components/ui/LocationPicker';
 import { DobPicker } from '@/components/ui/DobPicker';
 import { Button } from '@/components/ui/Button';
 import { api, ApiError } from '@/lib/api-client';
 import { setToken } from '@/lib/auth-token';
-import { useDistricts, useUpazilas } from '@/lib/queries';
+import { EMPTY_LOCATION, type ProfileLocation } from '@/lib/geo';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import type { AuthResponse, Gender, ProfileCreatedBy } from '@/lib/types';
 
@@ -22,7 +22,7 @@ const PROFILE_CREATED_BY_OPTIONS: ProfileCreatedBy[] = ['self', 'parents', 'brot
 
 type Step = 'phone' | 'otp' | 'account' | 'profile' | 'location' | 'photos' | 'done';
 
-const REGISTER_PROGRESS_KEY = 'biyekori_register_progress';
+const REGISTER_PROGRESS_KEY = 'biyekoralagbe_register_progress';
 
 interface StoredRegisterProgress {
   step: Step;
@@ -32,8 +32,7 @@ interface StoredRegisterProgress {
   dob: string;
   profileCreatedBy: ProfileCreatedBy;
   name: string;
-  district: string;
-  subDistrict: string;
+  location: ProfileLocation;
 }
 
 export default function RegisterPage() {
@@ -52,11 +51,7 @@ export default function RegisterPage() {
   const [profileCreatedBy, setProfileCreatedBy] = useState<ProfileCreatedBy>('self');
 
   const [name, setName] = useState('');
-  const [district, setDistrict] = useState('');
-  const [subDistrict, setSubDistrict] = useState('');
-
-  const { data: districts } = useDistricts();
-  const { data: upazilas } = useUpazilas(district || null);
+  const [location, setLocation] = useState<ProfileLocation>(EMPTY_LOCATION);
 
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
@@ -85,8 +80,7 @@ export default function RegisterPage() {
       setDob(saved.dob ?? '');
       setProfileCreatedBy(saved.profileCreatedBy ?? 'self');
       setName(saved.name ?? '');
-      setDistrict(saved.district ?? '');
-      setSubDistrict(saved.subDistrict ?? '');
+      setLocation(saved.location ?? EMPTY_LOCATION);
     } catch {
       sessionStorage.removeItem(REGISTER_PROGRESS_KEY);
     }
@@ -106,11 +100,10 @@ export default function RegisterPage() {
       dob,
       profileCreatedBy,
       name,
-      district,
-      subDistrict,
+      location,
     };
     sessionStorage.setItem(REGISTER_PROGRESS_KEY, JSON.stringify(progress));
-  }, [step, phone, verificationToken, gender, dob, profileCreatedBy, name, district, subDistrict]);
+  }, [step, phone, verificationToken, gender, dob, profileCreatedBy, name, location]);
 
   const sendOtp = useMutation({
     mutationFn: () => api.post('auth/otp/send', { phone, purpose: 'register' }),
@@ -141,8 +134,11 @@ export default function RegisterPage() {
     mutationFn: () =>
       api.put('profiles/me', {
         name,
-        district,
-        subDistrict: subDistrict || undefined,
+        country: location.country,
+        countryCode: location.countryCode || undefined,
+        state: location.state || undefined,
+        city: location.city || undefined,
+        zip: location.zip || undefined,
         maritalStatus: 'single',
         profileCreatedBy,
       }),
@@ -314,25 +310,7 @@ export default function RegisterPage() {
             <div className="flex flex-col gap-4">
               <h1 className="font-display text-2xl text-[var(--color-text)]">{t('auth.register.stepDetailsTitle')}</h1>
               <Input label={t('auth.register.name')} required placeholder="e.g. Ziaul Haque" value={name} onChange={(e) => setName(e.target.value)} />
-              <SearchableSelect
-                label={t('auth.register.district')}
-                placeholder={t('auth.register.selectDistrict')}
-                required
-                value={district}
-                onChange={(next) => {
-                  setDistrict(next);
-                  setSubDistrict('');
-                }}
-                options={districts?.map((d) => d.name) ?? []}
-              />
-              <SearchableSelect
-                label={t('auth.register.subDistrict')}
-                placeholder={t('auth.register.selectSubDistrict')}
-                value={subDistrict}
-                onChange={setSubDistrict}
-                disabled={!district}
-                options={upazilas ?? []}
-              />
+              <LocationPicker required value={location} onChange={setLocation} />
               <Button onClick={() => saveProfile.mutate()} loading={saveProfile.isPending}>
                 {t('common.continue')}
               </Button>

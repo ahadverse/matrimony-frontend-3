@@ -16,7 +16,14 @@ interface SearchableSelectProps {
   options: string[];
   disabled?: boolean;
   error?: string;
+  /** Caps how many options are put in the DOM at once — see `filtered` below. */
+  maxVisible?: number;
 }
+
+// Some city lists run to a few thousand entries, and rendering every one of them
+// as a button locks the browser up for a moment on open. Only ever mount this
+// many; the search box is how you reach the rest.
+const DEFAULT_MAX_VISIBLE = 200;
 
 export function SearchableSelect({
   label,
@@ -29,6 +36,7 @@ export function SearchableSelect({
   options,
   disabled,
   error,
+  maxVisible = DEFAULT_MAX_VISIBLE,
 }: SearchableSelectProps) {
   const { t } = useLanguage();
   const effectivePlaceholder = placeholder ?? t('common.selectEllipsis');
@@ -65,11 +73,14 @@ export function SearchableSelect({
     if (open) searchRef.current?.focus();
   }, [open]);
 
-  const filtered = useMemo(() => {
+  const { visible, hiddenCount } = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return options;
-    return options.filter((o) => o.toLowerCase().includes(q));
-  }, [options, query]);
+    const matches = q ? options.filter((o) => o.toLowerCase().includes(q)) : options;
+    return {
+      visible: matches.slice(0, maxVisible),
+      hiddenCount: Math.max(0, matches.length - maxVisible),
+    };
+  }, [options, query, maxVisible]);
 
   function select(option: string) {
     onChange(option);
@@ -114,10 +125,10 @@ export function SearchableSelect({
             />
           </div>
           <div className="max-h-56 overflow-y-auto py-1">
-            {filtered.length === 0 ? (
+            {visible.length === 0 ? (
               <p className="px-4 py-3 text-sm text-[var(--color-text-faint)]">{effectiveEmptyLabel}</p>
             ) : (
-              filtered.map((option) => {
+              visible.map((option) => {
                 const selected = option === value;
                 return (
                   <button
@@ -136,6 +147,11 @@ export function SearchableSelect({
                   </button>
                 );
               })
+            )}
+            {hiddenCount > 0 && (
+              <p className="border-t border-[var(--color-border)] px-4 py-2 text-xs text-[var(--color-text-faint)]">
+                {t('common.keepTypingToNarrow', { count: hiddenCount })}
+              </p>
             )}
           </div>
         </div>

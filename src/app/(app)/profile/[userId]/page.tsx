@@ -36,6 +36,7 @@ import {
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { ApiError, resolveUploadUrl } from '@/lib/api-client';
 import { formatHeight } from '@/lib/height';
+import { formatLocationFull } from '@/lib/geo';
 
 export default function ProfileDetailPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = use(params);
@@ -144,7 +145,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ userId
           </h1>
           <div className="mt-1 flex items-center gap-1.5 text-sm text-[var(--color-text-faint)]">
             <MapPin size={14} />
-            {profile.subDistrict ? `${profile.subDistrict}, ${profile.district}` : profile.district}
+            {formatLocationFull(profile)}
           </div>
 
           <ProfileActions userId={userId} />
@@ -305,7 +306,7 @@ function LockedProfile({ userId }: { userId: string }) {
               </h1>
               <div className="mt-1 flex items-center gap-1.5 text-sm text-[var(--color-text-faint)]">
                 <MapPin size={14} />
-                {preview.subDistrict ? `${preview.subDistrict}, ${preview.district}` : preview.district}
+                {formatLocationFull(preview)}
               </div>
             </>
           )}

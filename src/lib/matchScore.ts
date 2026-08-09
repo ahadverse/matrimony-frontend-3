@@ -9,7 +9,11 @@ import type { BrowseFeedCard } from './queries';
 export function computeMatchScore(me: MyProfile | null | undefined, candidate: BrowseFeedCard): number {
   if (!me) return 60;
   let score = 40;
-  if (me.district && me.district === candidate.district) score += 20;
+  // Same city is the strongest proximity signal; same state, then same country,
+  // each count for progressively less.
+  if (me.city && me.city === candidate.city) score += 20;
+  else if (me.state && me.state === candidate.state) score += 14;
+  else if (me.country && me.country === candidate.country) score += 6;
   if (me.religion && candidate.religion && me.religion === candidate.religion) score += 15;
   if (me.education && candidate.education && me.education === candidate.education) score += 10;
   if (candidate.isVerified) score += 5;

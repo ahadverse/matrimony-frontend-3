@@ -8,7 +8,7 @@ import { SlidersHorizontal, UserRoundPen } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Select';
-import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { LocationPicker } from '@/components/ui/LocationPicker';
 import { RangeSlider } from '@/components/ui/RangeSlider';
 import { Modal } from '@/components/ui/Modal';
 import { SwipeStack } from '@/components/swipe/SwipeStack';
@@ -18,13 +18,13 @@ import { MatchModal } from '@/components/swipe/MatchModal';
 import type { SwipeAction } from '@/components/swipe/useSwipeGesture';
 import {
   useBrowseFeed,
-  useDistricts,
   useMyProfile,
   useSwipeMutation,
   type BrowseFilters,
 } from '@/lib/queries';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { ApiError } from '@/lib/api-client';
+import { EMPTY_LOCATION, type ProfileLocation } from '@/lib/geo';
 import type { BrowseCard } from '@/lib/types';
 
 const MIN_BROWSE_COMPLETION_PERCENT = 80;
@@ -40,8 +40,9 @@ function filtersFromSearchParams(params: ReturnType<typeof useSearchParams>): Br
   const ageMin = params.get('ageMin');
   const ageMax = params.get('ageMax');
   return {
-    district: params.get('district') || undefined,
-    subDistrict: params.get('subDistrict') || undefined,
+    country: params.get('country') || undefined,
+    state: params.get('state') || undefined,
+    city: params.get('city') || undefined,
     education: params.get('education') || undefined,
     profession: params.get('profession') || undefined,
     religion: params.get('religion') || undefined,
@@ -218,11 +219,15 @@ function BrowseFilterModal({
   onApply: (f: BrowseFilters) => void;
 }) {
   const { t } = useLanguage();
-  const { data: districts } = useDistricts();
   // No effect needed to sync these from `filters`: Modal unmounts its
   // children while closed (see Modal.tsx), so this component remounts fresh
   // every time it opens and these initializers re-run automatically.
-  const [district, setDistrict] = useState(filters.district ?? '');
+  const [location, setLocation] = useState<ProfileLocation>({
+    ...EMPTY_LOCATION,
+    country: filters.country ?? '',
+    state: filters.state ?? '',
+    city: filters.city ?? '',
+  });
   const [education, setEducation] = useState(filters.education ?? '');
   const [profession, setProfession] = useState(filters.profession ?? '');
   const [religion, setReligion] = useState(filters.religion ?? '');
@@ -232,7 +237,9 @@ function BrowseFilterModal({
 
   function apply() {
     onApply({
-      district: district || undefined,
+      country: location.country || undefined,
+      state: location.state || undefined,
+      city: location.city || undefined,
       education: education || undefined,
       profession: profession || undefined,
       religion: religion || undefined,
@@ -244,7 +251,7 @@ function BrowseFilterModal({
   }
 
   function clear() {
-    setDistrict('');
+    setLocation(EMPTY_LOCATION);
     setEducation('');
     setProfession('');
     setReligion('');
@@ -258,13 +265,7 @@ function BrowseFilterModal({
   return (
     <Modal open={open} onClose={onClose} title={t('browse.filtersTitle')}>
       <div className="flex flex-col gap-4">
-        <SearchableSelect
-          label={t('auth.register.district')}
-          placeholder={t('auth.register.selectDistrict')}
-          value={district}
-          onChange={setDistrict}
-          options={districts?.map((d) => d.name) ?? []}
-        />
+        <LocationPicker showZip={false} value={location} onChange={setLocation} />
         <div>
           <span className="text-sm font-medium text-[var(--color-text-muted)]">{t('browse.ageRange')}</span>
           <div className="mt-1.5">

@@ -28,8 +28,7 @@ export function ShortlistSection() {
               key={p.userId}
               userId={p.userId}
               name={p.name}
-              district={p.district}
-              subDistrict={p.subDistrict}
+              location={p}
               photoUrl={p.photoUrl}
               isVerified={p.isVerified}
             />

@@ -30,8 +30,7 @@ export function RecommendedGrid() {
             key={card.id}
             userId={card.id}
             name={card.name}
-            district={card.district}
-            subDistrict={card.subDistrict}
+            location={card}
             age={card.age}
             photoUrl={card.photoUrl}
             isVerified={card.isVerified}

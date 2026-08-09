@@ -21,6 +21,7 @@ import {
 } from '@/lib/queries';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { ApiError, resolveUploadUrl } from '@/lib/api-client';
+import { formatLocation } from '@/lib/geo';
 import type { LikedYouCard } from '@/lib/types';
 
 type Tab = 'received' | 'shortlisted' | 'sent' | 'filtered';
@@ -95,7 +96,7 @@ function InterestsContent() {
                   <InterestRow
                     photoUrl={card.unlocked ? card.photoUrl : card.photoUrl}
                     name={card.name}
-                    meta={`${card.subDistrict ? `${card.subDistrict}, ` : ''}${card.district}`}
+                    meta={formatLocation(card)}
                     isVerified={card.isVerified}
                     dateLabel={new Date(card.likedAt).toLocaleDateString()}
                     locked={!card.unlocked}
@@ -127,7 +128,7 @@ function InterestsContent() {
                 <InterestRow
                   photoUrl={card.photoUrl}
                   name={card.name}
-                  meta={`${card.subDistrict ? `${card.subDistrict}, ` : ''}${card.district}`}
+                  meta={formatLocation(card)}
                   isVerified={card.isVerified}
                   dateLabel={new Date(card.shortlistedAt).toLocaleDateString()}
                   onViewProfile={() => router.push(`/profile/${card.userId}`)}
@@ -148,7 +149,7 @@ function InterestsContent() {
                   <InterestRow
                     photoUrl={card.photoUrl}
                     name={card.name}
-                    meta={`${card.subDistrict ? `${card.subDistrict}, ` : ''}${card.district}`}
+                    meta={formatLocation(card)}
                     isVerified={card.isVerified}
                     dateLabel={new Date(card.likedAt).toLocaleDateString()}
                     statusLabel={conversationId ? t('interests.statusMatched') : t('interests.statusPending')}
@@ -173,7 +174,7 @@ function InterestsContent() {
                 <InterestRow
                   photoUrl={card.photoUrl}
                   name={card.name}
-                  meta={`${card.subDistrict ? `${card.subDistrict}, ` : ''}${card.district}`}
+                  meta={formatLocation(card)}
                   isVerified={card.isVerified}
                   dateLabel={new Date(card.filteredAt).toLocaleDateString()}
                   statusLabel={t('interests.statusFiltered')}
