@@ -5,16 +5,16 @@ import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 
 const platformLinks = [
-  { href: '/browse', labelKey: 'footer.browse' },
+  { href: '/profiles', labelKey: 'nav.profiles' },
   { href: '/checkout', labelKey: 'footer.plans' },
   { href: '/how-it-works', labelKey: 'footer.guide' },
+  { href: '/contact-us', labelKey: 'footer.contact' },
   { href: '/register', labelKey: 'footer.joinFree' },
 ] as const;
 
 const legalLinks = [
-  { href: '/faq', labelKey: 'footer.terms' },
-  { href: '/faq', labelKey: 'footer.termsBn' },
-  { href: '/faq', labelKey: 'footer.privacy' },
+  { href: '/terms', labelKey: 'footer.terms' },
+  { href: '/privacy', labelKey: 'footer.privacy' },
 ] as const;
 
 export function SiteFooter({ className }: { className?: string } = {}) {

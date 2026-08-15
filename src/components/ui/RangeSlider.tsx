@@ -8,6 +8,8 @@ interface RangeSliderProps {
   onChange: (min: number, max: number) => void;
   step?: number;
   formatValue?: (value: number) => string;
+  /** What the range measures, for the two thumbs' accessible names. */
+  label?: string;
 }
 
 // Two native range inputs stacked on one track. Each input keeps
@@ -40,7 +42,16 @@ const THUMB = [
   '[&::-moz-range-track]:bg-transparent',
 ].join(' ');
 
-export function RangeSlider({ min, max, valueMin, valueMax, onChange, step = 1, formatValue }: RangeSliderProps) {
+export function RangeSlider({
+  min,
+  max,
+  valueMin,
+  valueMax,
+  onChange,
+  step = 1,
+  formatValue,
+  label: rangeLabel = 'age',
+}: RangeSliderProps) {
   const percentMin = ((valueMin - min) / (max - min)) * 100;
   const percentMax = ((valueMax - min) / (max - min)) * 100;
   const label = formatValue ?? ((v: number) => String(v));
@@ -59,7 +70,7 @@ export function RangeSlider({ min, max, valueMin, valueMax, onChange, step = 1, 
         />
         <input
           type="range"
-          aria-label="Minimum age"
+          aria-label={`Minimum ${rangeLabel}`}
           min={min}
           max={max}
           step={step}
@@ -69,7 +80,7 @@ export function RangeSlider({ min, max, valueMin, valueMax, onChange, step = 1, 
         />
         <input
           type="range"
-          aria-label="Maximum age"
+          aria-label={`Maximum ${rangeLabel}`}
           min={min}
           max={max}
           step={step}

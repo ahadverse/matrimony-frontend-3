@@ -2,9 +2,14 @@ export type Gender = 'male' | 'female';
 export type MaritalStatus = 'single' | 'divorced' | 'widowed';
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 export type BloodGroup = 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
-export type Complexion = 'fair' | 'medium' | 'dark';
+/** `medium` is legacy — the backfill remaps it to `wheatish`; see the backend enum. */
+export type Complexion = 'very_fair' | 'fair' | 'wheatish' | 'medium' | 'dark';
 export type ProfileCreatedBy = 'self' | 'parents' | 'brother' | 'sister' | 'relative';
 export type VerificationStatus = 'pending' | 'approved' | 'rejected';
+export type ParentStatus = 'alive' | 'deceased';
+export type FamilyValues = 'traditional' | 'moderate' | 'liberal';
+export type Diet = 'vegetarian' | 'non_vegetarian' | 'not_matter';
+export type Smoke = 'non_smoker' | 'smoker' | 'light_social';
 
 export interface MyVerification {
   id: string;
@@ -18,6 +23,7 @@ export interface MyVerification {
 export interface CurrentUser {
   id: string;
   phone: string;
+  email: string | null;
   gender: Gender;
   dob: string | null;
   role: 'user' | 'admin';
@@ -30,7 +36,7 @@ export interface CurrentUser {
 /** Shape returned by the backend's /auth/login, /auth/register and /auth/reset-password. */
 export interface AuthResponse {
   accessToken: string;
-  user: Pick<CurrentUser, 'id' | 'phone' | 'gender' | 'role' | 'status' | 'walletBalance'>;
+  user: Pick<CurrentUser, 'id' | 'phone' | 'email' | 'gender' | 'role' | 'status' | 'walletBalance'>;
 }
 
 export interface District {
@@ -46,13 +52,20 @@ export interface District {
  * frontends. Read `country`/`state`/`city` here — `lib/geo.ts` has the
  * formatters, which fall back to the legacy pair when needed.
  */
-export interface LocationFields {
+export interface LocationFields extends CoarseLocationFields {
   district: string | null;
   subDistrict: string | null;
+  city: string | null;
+}
+
+/**
+ * The part of the above a locked profile carries — the district is what the
+ * unlock fee buys, so the backend leaves those keys off that payload entirely.
+ */
+export interface CoarseLocationFields {
   country: string | null;
   countryCode: string | null;
   state: string | null;
-  city: string | null;
 }
 
 export interface Photo {
@@ -63,25 +76,71 @@ export interface Photo {
   order: number;
 }
 
-export interface MyProfile extends LocationFields {
-  id: string;
-  name: string;
-  /** Only ever returned for your own profile — never on someone else's card. */
-  zip: string | null;
+/**
+ * The bio-data every profile carries, and the exact set a *locked* profile is
+ * allowed to expose. Deliberately excludes name, phone, email and the street
+ * addresses — see the backend's `common/utils/profile-visibility.ts`, which is
+ * the enforcing counterpart of this type.
+ */
+export interface ProfileBioData {
   bio: string | null;
-  profession: string | null;
-  education: string | null;
   religion: string | null;
-  heightCm: number | null;
   maritalStatus: MaritalStatus;
   profileCreatedBy: ProfileCreatedBy | null;
+  nationality: string | null;
+
+  education: string | null;
+  educationDetails: string | null;
+  collegeUniversity: string | null;
+  profession: string | null;
+  professionDetails: string | null;
+  workingSector: string | null;
+  companyName: string | null;
+  /** Null when the member marked their income private — check `incomeIsPrivate`. */
+  monthlyIncome: number | null;
+  incomeIsPrivate: boolean;
+
+  fatherStatus: ParentStatus | null;
   fatherOccupation: string | null;
+  motherStatus: ParentStatus | null;
   motherOccupation: string | null;
   siblingsCount: number | null;
-  bloodGroup: BloodGroup | null;
+  numberOfBrothers: number | null;
+  numberOfSisters: number | null;
+  brothersMarried: number | null;
+  brothersUnmarried: number | null;
+  sistersMarried: number | null;
+  sistersUnmarried: number | null;
+  familyDetails: string | null;
+  familyFinancialStatus: string | null;
+
+  heightCm: number | null;
+  weightKg: number | null;
+  bodyType: string | null;
   complexion: Complexion | null;
-  monthlyIncome: number | null;
-  companyName: string | null;
+  bloodGroup: BloodGroup | null;
+  physicalDetails: string | null;
+
+  religiousValue: string | null;
+  familyValues: FamilyValues | null;
+  diet: Diet | null;
+  smoke: Smoke | null;
+  hobbies: string | null;
+
+  motherTongue: string | null;
+  englishComfort: string | null;
+  residencyStatus: string | null;
+  growUpIn: string | null;
+  partnerPreferences: string | null;
+}
+
+export interface MyProfile extends LocationFields, ProfileBioData {
+  id: string;
+  publicId: string | null;
+  name: string;
+  relativeName: string | null;
+  /** Only ever returned for your own profile — never on someone else's card. */
+  zip: string | null;
   presentAddress: string | null;
   permanentAddress: string | null;
   approvalStatus: ApprovalStatus;
@@ -90,17 +149,6 @@ export interface MyProfile extends LocationFields {
   isVerified: boolean;
   completionPercent: number;
   missingFields: string[];
-  motherTongue: string | null;
-  englishComfort: string | null;
-  residencyStatus: string | null;
-  growUpIn: string | null;
-  collegeUniversity: string | null;
-  partnerPreferences: string | null;
-  hobbies: string | null;
-  familyFinancialStatus: string | null;
-  bodyType: string | null;
-  numberOfSisters: number | null;
-  numberOfBrothers: number | null;
   spotlightUntil: string | null;
 }
 
@@ -137,46 +185,52 @@ export interface MyLikeCard extends LocationFields {
   isVerified: boolean;
 }
 
-export interface ProfilePreview extends LocationFields {
+/**
+ * A profile the viewer has not paid to unlock: the full bio-data, no identity.
+ * `name`, `phone`, `email`, the addresses and the district are absent from the
+ * payload entirely rather than nulled, so reading them is a type error.
+ */
+export interface LockedProfile extends CoarseLocationFields, ProfileBioData {
   userId: string;
-  name: string;
-  photoUrl: string | null;
-  isVerified: boolean;
-}
-
-export interface ProfileDetail extends LocationFields {
-  userId: string;
-  name: string;
+  publicId: string | null;
   age: number | null;
-  bio: string | null;
-  profession: string | null;
-  education: string | null;
-  religion: string | null;
-  heightCm: number | null;
-  maritalStatus: MaritalStatus;
-  profileCreatedBy: ProfileCreatedBy | null;
-  fatherOccupation: string | null;
-  motherOccupation: string | null;
-  siblingsCount: number | null;
-  bloodGroup: BloodGroup | null;
-  complexion: Complexion | null;
-  monthlyIncome: number | null;
-  companyName: string | null;
-  presentAddress: string | null;
-  permanentAddress: string | null;
-  motherTongue: string | null;
-  englishComfort: string | null;
-  residencyStatus: string | null;
-  growUpIn: string | null;
-  collegeUniversity: string | null;
-  partnerPreferences: string | null;
-  hobbies: string | null;
-  familyFinancialStatus: string | null;
-  bodyType: string | null;
-  numberOfSisters: number | null;
-  numberOfBrothers: number | null;
+  gender: Gender;
+  /** Blurred, since the viewer has not unlocked this profile. */
   photos: string[];
   isVerified: boolean;
+  locked: true;
+}
+
+/** Everything above, plus the identity and contact details unlocking pays for. */
+export interface UnlockedProfile extends Omit<LockedProfile, 'locked'>, LocationFields {
+  name: string;
+  relativeName: string | null;
+  phone: string;
+  email: string | null;
+  presentAddress: string | null;
+  permanentAddress: string | null;
+  locked: false;
+}
+
+/** What `GET /profile-views/:id` returns — always an unlocked profile. */
+export type ProfileDetail = UnlockedProfile;
+
+/** What `GET /profile-views/:id/preview` returns — the paywall teaser. */
+export interface ProfilePreview extends LockedProfile {
+  photoUrl: string | null;
+}
+
+/** One row of `GET /profiles/public`; locked or unlocked per viewer. */
+export type PublicProfileCard = (LockedProfile | UnlockedProfile) & {
+  photoUrl: string | null;
+  isSpotlighted: boolean;
+};
+
+export interface PublicProfilesPage {
+  items: PublicProfileCard[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface WalletInfo {

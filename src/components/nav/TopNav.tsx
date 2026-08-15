@@ -8,11 +8,12 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 
 const navLinks = [
+  { href: '/profiles', labelKey: 'nav.profiles' },
   { href: '/success-stories', labelKey: 'landing.navStories' },
-  { href: '/features', labelKey: 'landing.navFeatures' },
   { href: '/how-it-works', labelKey: 'landing.navHowItWorks' },
   { href: '/assistance-service', labelKey: 'assistantService.navLabel' },
   { href: '/faq', labelKey: 'landing.navFaq' },
+  { href: '/contact-us', labelKey: 'contactPage.navLabel' },
 ] as const;
 
 export function TopNav() {

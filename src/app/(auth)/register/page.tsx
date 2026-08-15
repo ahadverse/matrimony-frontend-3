@@ -1,38 +1,179 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Camera, Check, Trash2, UserRound } from 'lucide-react';
+import {
+  Camera,
+  Check,
+  GraduationCap,
+  Heart,
+  Info,
+  MapPin,
+  PersonStanding,
+  Trash2,
+  UserRound,
+} from 'lucide-react';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { Button } from '@/components/ui/Button';
+import { ProgressBar } from '@/components/ui/ProgressBar';
+import { RichText } from '@/components/ui/RichText';
 import { LocationPicker } from '@/components/ui/LocationPicker';
 import { DobPicker } from '@/components/ui/DobPicker';
-import { Button } from '@/components/ui/Button';
 import { api, ApiError } from '@/lib/api-client';
 import { setToken } from '@/lib/auth-token';
 import { EMPTY_LOCATION, type ProfileLocation } from '@/lib/geo';
+import { cmToFeetInches, feetInchesToCm } from '@/lib/height';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
+import {
+  BODY_TYPES,
+  COMPLEXIONS,
+  BLOOD_GROUPS,
+  DIETS,
+  FAMILY_VALUES,
+  MARITAL_STATUSES,
+  MONTHLY_INCOME_BANDS,
+  PARENT_STATUSES,
+  PROFESSIONAL_AREAS,
+  PROFILE_CREATED_BY,
+  QUALIFICATIONS,
+  RELIGIONS,
+  RELIGIOUS_VALUES,
+  SMOKE_OPTIONS,
+  WORKING_SECTORS,
+  enumKey,
+} from '@/lib/profileOptions';
 import type { AuthResponse, Gender, ProfileCreatedBy } from '@/lib/types';
 
-const PROFILE_CREATED_BY_OPTIONS: ProfileCreatedBy[] = ['self', 'parents', 'brother', 'sister', 'relative'];
+/**
+ * Registration follows the bdmarriage flow: verify a phone, create the account,
+ * then walk through the bio-data one themed screen at a time.
+ *
+ * Each wizard step saves its own slice via `PUT profiles/me`, which is a
+ * partial upsert — so someone who drops out at "Life Style" still leaves a
+ * profile with everything up to that point, rather than nothing at all.
+ */
 
-type Step = 'phone' | 'otp' | 'account' | 'profile' | 'location' | 'photos' | 'done';
+type Step =
+  | 'phone'
+  | 'otp'
+  | 'account'
+  | 'basic'
+  | 'education'
+  | 'family'
+  | 'physical'
+  | 'lifestyle'
+  | 'about'
+  | 'location'
+  | 'photos'
+  | 'done';
 
 const REGISTER_PROGRESS_KEY = 'biyekoralagbe_register_progress';
 
-interface StoredRegisterProgress {
+const HEIGHT_OPTIONS = Array.from({ length: feetInchesToCm(7, 0) - feetInchesToCm(4, 0) + 1 }, (_, i) =>
+  feetInchesToCm(4, 0) + i,
+);
+const WEIGHT_OPTIONS = Array.from({ length: 121 }, (_, i) => 30 + i);
+
+interface WizardForm {
+  // Account
+  email: string;
+  password: string;
+  // Basic info
+  gender: Gender | '';
+  name: string;
+  profileCreatedBy: ProfileCreatedBy;
+  relativeName: string;
+  dob: string;
+  maritalStatus: string;
+  religion: string;
+  nationality: string;
+  // Education & career
+  education: string;
+  educationDetails: string;
+  workingSector: string;
+  profession: string;
+  professionDetails: string;
+  monthlyIncome: string;
+  incomeIsPrivate: boolean;
+  // Family & location
+  fatherStatus: string;
+  fatherOccupation: string;
+  motherStatus: string;
+  motherOccupation: string;
+  brothersUnmarried: string;
+  brothersMarried: string;
+  sistersUnmarried: string;
+  sistersMarried: string;
+  familyDetails: string;
+  location: ProfileLocation;
+  // Physical
+  heightCm: string;
+  weightKg: string;
+  bodyType: string;
+  complexion: string;
+  bloodGroup: string;
+  physicalDetails: string;
+  // Life style
+  religiousValue: string;
+  familyValues: string;
+  diet: string;
+  smoke: string;
+  // About
+  bio: string;
+}
+
+const emptyForm = (): WizardForm => ({
+  email: '',
+  password: '',
+  gender: '',
+  name: '',
+  profileCreatedBy: 'self',
+  relativeName: '',
+  dob: '',
+  maritalStatus: '',
+  religion: '',
+  nationality: 'Bangladeshi',
+  education: '',
+  educationDetails: '',
+  workingSector: '',
+  profession: '',
+  professionDetails: '',
+  monthlyIncome: '',
+  incomeIsPrivate: false,
+  fatherStatus: '',
+  fatherOccupation: '',
+  motherStatus: '',
+  motherOccupation: '',
+  brothersUnmarried: '0',
+  brothersMarried: '0',
+  sistersUnmarried: '0',
+  sistersMarried: '0',
+  familyDetails: '',
+  location: EMPTY_LOCATION,
+  heightCm: '',
+  weightKg: '',
+  bodyType: '',
+  complexion: '',
+  bloodGroup: '',
+  physicalDetails: '',
+  religiousValue: '',
+  familyValues: 'traditional',
+  diet: 'not_matter',
+  smoke: '',
+  bio: '',
+});
+
+interface StoredProgress {
   step: Step;
   phone: string;
   verificationToken: string;
-  gender: Gender;
-  dob: string;
-  profileCreatedBy: ProfileCreatedBy;
-  name: string;
-  location: ProfileLocation;
+  form: WizardForm;
 }
 
 export default function RegisterPage() {
@@ -44,18 +185,15 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState('+8801');
   const [verificationToken, setVerificationToken] = useState('');
   const [otp, setOtp] = useState('');
-
-  const [password, setPassword] = useState('');
-  const [gender, setGender] = useState<Gender>('male');
-  const [dob, setDob] = useState('');
-  const [profileCreatedBy, setProfileCreatedBy] = useState<ProfileCreatedBy>('self');
-
-  const [name, setName] = useState('');
-  const [location, setLocation] = useState<ProfileLocation>(EMPTY_LOCATION);
+  const [form, setForm] = useState<WizardForm>(emptyForm);
 
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [uploadedCount, setUploadedCount] = useState(0);
+
+  function set<K extends keyof WizardForm>(key: K, value: WizardForm[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
 
   useEffect(() => {
     const urls = photos.map((file) => URL.createObjectURL(file));
@@ -71,16 +209,14 @@ export default function RegisterPage() {
     const raw = sessionStorage.getItem(REGISTER_PROGRESS_KEY);
     if (!raw) return;
     try {
-      const saved = JSON.parse(raw) as StoredRegisterProgress;
+      const saved = JSON.parse(raw) as StoredProgress;
       if (!saved.step || saved.step === 'done') return;
       setStep(saved.step);
       setPhone(saved.phone ?? '+8801');
       setVerificationToken(saved.verificationToken ?? '');
-      setGender(saved.gender ?? 'male');
-      setDob(saved.dob ?? '');
-      setProfileCreatedBy(saved.profileCreatedBy ?? 'self');
-      setName(saved.name ?? '');
-      setLocation(saved.location ?? EMPTY_LOCATION);
+      // Spread over a fresh form so a stored payload written by an earlier
+      // version of this wizard can't leave a new field undefined.
+      setForm({ ...emptyForm(), ...(saved.form ?? {}) });
     } catch {
       sessionStorage.removeItem(REGISTER_PROGRESS_KEY);
     }
@@ -92,18 +228,9 @@ export default function RegisterPage() {
       sessionStorage.removeItem(REGISTER_PROGRESS_KEY);
       return;
     }
-    const progress: StoredRegisterProgress = {
-      step,
-      phone,
-      verificationToken,
-      gender,
-      dob,
-      profileCreatedBy,
-      name,
-      location,
-    };
+    const progress: StoredProgress = { step, phone, verificationToken, form };
     sessionStorage.setItem(REGISTER_PROGRESS_KEY, JSON.stringify(progress));
-  }, [step, phone, verificationToken, gender, dob, profileCreatedBy, name, location]);
+  }, [step, phone, verificationToken, form]);
 
   const sendOtp = useMutation({
     mutationFn: () => api.post('auth/otp/send', { phone, purpose: 'register' }),
@@ -112,7 +239,8 @@ export default function RegisterPage() {
   });
 
   const verifyOtp = useMutation({
-    mutationFn: () => api.post<{ verificationToken: string }>('auth/otp/verify', { phone, code: otp, purpose: 'register' }),
+    mutationFn: () =>
+      api.post<{ verificationToken: string }>('auth/otp/verify', { phone, code: otp, purpose: 'register' }),
     onSuccess: (data) => {
       setVerificationToken(data.verificationToken);
       setStep('account');
@@ -121,29 +249,37 @@ export default function RegisterPage() {
   });
 
   const createAccount = useMutation({
-    mutationFn: () => api.post<AuthResponse>('auth/register', { phone, password, gender, dob, verificationToken }),
+    mutationFn: () =>
+      api.post<AuthResponse>('auth/register', {
+        phone,
+        email: form.email || undefined,
+        password: form.password,
+        verificationToken,
+      }),
     onSuccess: async (data) => {
       setToken(data.accessToken);
       await queryClient.invalidateQueries({ queryKey: ['me'] });
-      setStep('profile');
+      setStep('basic');
     },
     onError: (e) => toast.error(e instanceof ApiError ? String(e.message) : 'Could not create account'),
   });
 
-  const saveProfile = useMutation({
-    mutationFn: () =>
-      api.put('profiles/me', {
-        name,
-        country: location.country,
-        countryCode: location.countryCode || undefined,
-        state: location.state || undefined,
-        city: location.city || undefined,
-        zip: location.zip || undefined,
-        maritalStatus: 'single',
-        profileCreatedBy,
-      }),
-    onSuccess: () => setStep('location'),
-    onError: (e) => toast.error(e instanceof ApiError ? String(e.message) : 'Could not save profile'),
+  /**
+   * Saves one step's slice and advances. Gender and date of birth live on the
+   * user record rather than the profile, so the Basic Info step also PATCHes
+   * `users/me/basics` — that is the only step that touches two endpoints.
+   */
+  const saveStep = useMutation({
+    mutationFn: async ({ payload, basics }: { payload: Record<string, unknown>; basics?: boolean }) => {
+      if (basics) {
+        await api.patch('users/me/basics', {
+          gender: form.gender || undefined,
+          dob: form.dob || undefined,
+        });
+      }
+      await api.put('profiles/me', payload);
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? String(e.message) : t('auth.register.saveError')),
   });
 
   const saveLocation = useMutation({
@@ -159,6 +295,14 @@ export default function RegisterPage() {
       return api.post('profiles/me/photos', formData);
     },
   });
+
+  /** Numeric profile fields arrive as strings from `<select>`/`<input>`. */
+  const num = (value: string): number | undefined => (value === '' ? undefined : Number(value));
+  const str = (value: string): string | undefined => value.trim() || undefined;
+
+  function advance(next: Step, payload: Record<string, unknown>, basics?: boolean) {
+    saveStep.mutate({ payload, basics }, { onSuccess: () => setStep(next) });
+  }
 
   function requestLocation() {
     if (!navigator.geolocation) {
@@ -184,8 +328,10 @@ export default function RegisterPage() {
     setStep('done');
   }
 
+  const isWizardStep = WIZARD_STEPS.includes(step as WizardStep);
+
   return (
-    <AuthShell>
+    <AuthShell wide={isWizardStep}>
       <AnimatePresence mode="wait">
         <motion.div
           key={step}
@@ -202,6 +348,12 @@ export default function RegisterPage() {
               <Button onClick={() => sendOtp.mutate()} loading={sendOtp.isPending}>
                 {t('auth.register.sendOtp')}
               </Button>
+              <p className="text-center text-xs text-[var(--color-text-muted)]">
+                {t('auth.register.alreadyMember')}{' '}
+                <Link href="/login" className="text-[var(--color-primary-accent)] hover:underline">
+                  {t('auth.register.loginNow')}
+                </Link>
+              </p>
             </div>
           )}
 
@@ -237,84 +389,625 @@ export default function RegisterPage() {
                   <UserRound size={20} />
                 </div>
                 <div>
-                  <h1 className="font-display text-2xl text-[var(--color-text)]">{t('auth.register.stepDetailsTitle')}</h1>
-                  <p className="text-sm text-[var(--color-text-muted)]">{t('auth.register.stepDetailsBody')}</p>
+                  <h1 className="font-display text-2xl text-[var(--color-text)]">
+                    {t('auth.register.stepAccountTitle')}
+                  </h1>
+                  <p className="text-sm text-[var(--color-text-muted)]">{t('auth.register.stepAccountBody')}</p>
                 </div>
               </div>
 
+              <Input label={t('auth.register.mobileNumber')} value={phone} readOnly disabled />
               <Input
-                label={t('auth.register.password')}
+                label={t('auth.register.email')}
+                type="email"
+                required
+                placeholder={t('auth.register.emailPlaceholder')}
+                value={form.email}
+                onChange={(e) => set('email', e.target.value)}
+              />
+              <Input
+                label={t('auth.register.createPassword')}
                 type="password"
                 required
                 placeholder="At least 8 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={form.password}
+                onChange={(e) => set('password', e.target.value)}
               />
-
-              <div>
-                <label className="text-sm font-medium text-[var(--color-text-muted)]">
-                  {t('auth.register.gender')}
-                  <span className="text-[var(--color-danger)]"> *</span>
-                </label>
-                <div className="mt-1.5 grid grid-cols-2 gap-2">
-                  {(['male', 'female'] as const).map((g) => (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => setGender(g)}
-                      className={`h-11 rounded-xl border text-sm font-medium transition-colors ${
-                        gender === g
-                          ? 'gradient-primary text-[var(--color-on-primary)] border-transparent'
-                          : 'border-[var(--color-border)] text-[var(--color-text-muted)]'
-                      }`}
-                    >
-                      {t(`auth.register.${g}`)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <Select
                 label={t('auth.register.profileCreatedBy')}
-                value={profileCreatedBy}
-                onChange={(e) => setProfileCreatedBy(e.target.value as ProfileCreatedBy)}
+                value={form.profileCreatedBy}
+                onChange={(e) => set('profileCreatedBy', e.target.value as ProfileCreatedBy)}
               >
-                {PROFILE_CREATED_BY_OPTIONS.map((v) => (
+                {PROFILE_CREATED_BY.map((v) => (
                   <option key={v} value={v}>
-                    {t(`auth.register.profileCreatedBy${v.charAt(0).toUpperCase()}${v.slice(1)}`)}
+                    {t(`auth.register.profileCreatedBy${enumKey(v)}`)}
                   </option>
                 ))}
               </Select>
 
-              <div>
-                <DobPicker
-                  label={t('auth.register.dob')}
-                  required
-                  value={dob}
-                  onChange={setDob}
-                  locale={locale}
-                  dayPlaceholder={t('auth.register.dobDay')}
-                  monthPlaceholder={t('auth.register.dobMonth')}
-                  yearPlaceholder={t('auth.register.dobYear')}
-                />
-                <p className="mt-1.5 text-xs text-[var(--color-text-faint)]">{t('auth.register.dobHint')}</p>
-              </div>
-
-              <Button onClick={() => createAccount.mutate()} loading={createAccount.isPending}>
+              <Button
+                onClick={() => createAccount.mutate()}
+                loading={createAccount.isPending}
+                disabled={!form.email.trim() || form.password.length < 8}
+              >
                 {t('common.continue')}
               </Button>
+
+              <p className="text-center text-xs text-[var(--color-text-faint)]">
+                <RichText tKey="auth.register.termsNotice" values={{ terms: <LegalLink href="/terms" labelKey="contactPage.formConsentTerms" />, privacy: <LegalLink href="/privacy" labelKey="contactPage.formConsentPrivacy" /> }} />
+              </p>
             </div>
           )}
 
-          {step === 'profile' && (
-            <div className="flex flex-col gap-4">
-              <h1 className="font-display text-2xl text-[var(--color-text)]">{t('auth.register.stepDetailsTitle')}</h1>
-              <Input label={t('auth.register.name')} required placeholder="e.g. Ziaul Haque" value={name} onChange={(e) => setName(e.target.value)} />
-              <LocationPicker required value={location} onChange={setLocation} />
-              <Button onClick={() => saveProfile.mutate()} loading={saveProfile.isPending}>
-                {t('common.continue')}
-              </Button>
-            </div>
+          {step === 'basic' && (
+            <WizardStepShell
+              icon={Info}
+              title={t('auth.register.stepBasicTitle')}
+              subtitle={t('auth.register.stepBasicSubtitle')}
+              section={t('auth.register.stepBasicSection')}
+              percent={20}
+            >
+              <div className="flex flex-col gap-4">
+                <FieldRow label={t('auth.register.gender')} required>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['male', 'female'] as const).map((g) => (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => set('gender', g)}
+                        className={`h-11 rounded-xl border text-sm font-medium transition-colors ${
+                          form.gender === g
+                            ? 'gradient-primary border-transparent text-[var(--color-on-primary)]'
+                            : 'border-[var(--color-border)] text-[var(--color-text-muted)]'
+                        }`}
+                      >
+                        {t(`auth.register.${g}`)}
+                      </button>
+                    ))}
+                  </div>
+                </FieldRow>
+
+                <Input
+                  label={t('auth.register.candidateName')}
+                  required
+                  placeholder="e.g. Ziaul Haque"
+                  value={form.name}
+                  onChange={(e) => set('name', e.target.value)}
+                />
+
+                <Select
+                  label={t('auth.register.profileCreatedBy')}
+                  required
+                  value={form.profileCreatedBy}
+                  onChange={(e) => set('profileCreatedBy', e.target.value as ProfileCreatedBy)}
+                >
+                  {PROFILE_CREATED_BY.map((v) => (
+                    <option key={v} value={v}>
+                      {t(`auth.register.profileCreatedBy${enumKey(v)}`)}
+                    </option>
+                  ))}
+                </Select>
+
+                {/* Only meaningful when someone else runs the profile. */}
+                {form.profileCreatedBy !== 'self' && (
+                  <Input
+                    label={t('auth.register.relativeName')}
+                    required
+                    value={form.relativeName}
+                    onChange={(e) => set('relativeName', e.target.value)}
+                  />
+                )}
+
+                <div>
+                  <DobPicker
+                    label={t('auth.register.dob')}
+                    required
+                    value={form.dob}
+                    onChange={(v) => set('dob', v)}
+                    locale={locale}
+                    dayPlaceholder={t('auth.register.dobDay')}
+                    monthPlaceholder={t('auth.register.dobMonth')}
+                    yearPlaceholder={t('auth.register.dobYear')}
+                  />
+                  <p className="mt-1.5 text-xs text-[var(--color-text-faint)]">{t('auth.register.dobHint')}</p>
+                </div>
+
+                <Select
+                  label={t('profileDetail.maritalStatus')}
+                  required
+                  placeholder="--- Please select ---"
+                  value={form.maritalStatus}
+                  onChange={(e) => set('maritalStatus', e.target.value)}
+                >
+                  {MARITAL_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {t(`profileDetail.${s}`)}
+                    </option>
+                  ))}
+                </Select>
+
+                <Select
+                  label={t('profileDetail.religion')}
+                  required
+                  placeholder="--- Please select ---"
+                  value={form.religion}
+                  onChange={(e) => set('religion', e.target.value)}
+                >
+                  {RELIGIONS.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </Select>
+
+                <Input
+                  label={t('auth.register.nationality')}
+                  value={form.nationality}
+                  onChange={(e) => set('nationality', e.target.value)}
+                />
+              </div>
+
+              <StepActions
+                loading={saveStep.isPending}
+                disabled={
+                  !form.gender ||
+                  !form.name.trim() ||
+                  !form.dob ||
+                  !form.maritalStatus ||
+                  !form.religion ||
+                  (form.profileCreatedBy !== 'self' && !form.relativeName.trim())
+                }
+                onContinue={() =>
+                  advance(
+                    'education',
+                    {
+                      name: form.name.trim(),
+                      profileCreatedBy: form.profileCreatedBy,
+                      relativeName: form.profileCreatedBy === 'self' ? undefined : str(form.relativeName),
+                      maritalStatus: form.maritalStatus,
+                      religion: str(form.religion),
+                      nationality: str(form.nationality),
+                    },
+                    true,
+                  )
+                }
+              />
+            </WizardStepShell>
+          )}
+
+          {step === 'education' && (
+            <WizardStepShell
+              icon={GraduationCap}
+              title={t('auth.register.stepEducationTitle')}
+              subtitle={t('auth.register.stepEducationSubtitle')}
+              section={t('auth.register.stepEducationSection')}
+              percent={40}
+            >
+              <div className="flex flex-col gap-4">
+                <Select
+                  label={t('auth.register.highestQualification')}
+                  required
+                  placeholder={t('auth.register.selectQualification')}
+                  value={form.education}
+                  onChange={(e) => set('education', e.target.value)}
+                >
+                  {QUALIFICATIONS.map((q) => (
+                    <option key={q} value={q}>
+                      {q}
+                    </option>
+                  ))}
+                </Select>
+
+                <TextareaField
+                  label={t('auth.register.educationDetails')}
+                  placeholder={t('auth.register.educationDetailsPlaceholder')}
+                  hint={t('auth.register.educationDetailsHint')}
+                  value={form.educationDetails}
+                  onChange={(v) => set('educationDetails', v)}
+                />
+
+                <Select
+                  label={t('auth.register.workingSector')}
+                  required
+                  placeholder={t('auth.register.selectSector')}
+                  value={form.workingSector}
+                  onChange={(e) => set('workingSector', e.target.value)}
+                >
+                  {WORKING_SECTORS.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </Select>
+
+                <Select
+                  label={t('auth.register.profession')}
+                  required
+                  placeholder={t('auth.register.selectProfession')}
+                  value={form.profession}
+                  onChange={(e) => set('profession', e.target.value)}
+                >
+                  {PROFESSIONAL_AREAS.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </Select>
+
+                <TextareaField
+                  label={t('auth.register.professionDetails')}
+                  placeholder={t('auth.register.professionDetailsPlaceholder')}
+                  hint={t('auth.register.professionDetailsHint')}
+                  value={form.professionDetails}
+                  onChange={(v) => set('professionDetails', v)}
+                />
+
+                <div>
+                  <Select
+                    label={t('auth.register.monthlyIncome')}
+                    placeholder={t('auth.register.selectIncome')}
+                    value={form.monthlyIncome}
+                    onChange={(e) => set('monthlyIncome', e.target.value)}
+                  >
+                    {MONTHLY_INCOME_BANDS.map((band) => (
+                      <option key={band.value} value={band.value}>
+                        {band.label}
+                      </option>
+                    ))}
+                  </Select>
+                  <label className="mt-2 flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
+                    <input
+                      type="checkbox"
+                      checked={form.incomeIsPrivate}
+                      onChange={(e) => set('incomeIsPrivate', e.target.checked)}
+                      className="h-4 w-4 accent-[var(--color-primary)]"
+                    />
+                    {t('auth.register.keepItPrivate')} 🔒
+                  </label>
+                </div>
+              </div>
+
+              <StepActions
+                loading={saveStep.isPending}
+                disabled={!form.education || !form.workingSector || !form.profession}
+                onBack={() => setStep('basic')}
+                onContinue={() =>
+                  advance('family', {
+                    education: form.education,
+                    educationDetails: str(form.educationDetails),
+                    workingSector: form.workingSector,
+                    profession: form.profession,
+                    professionDetails: str(form.professionDetails),
+                    monthlyIncome: num(form.monthlyIncome),
+                    incomeIsPrivate: form.incomeIsPrivate,
+                  })
+                }
+              />
+            </WizardStepShell>
+          )}
+
+          {step === 'family' && (
+            <WizardStepShell
+              icon={MapPin}
+              title={t('auth.register.stepFamilyTitle')}
+              subtitle={t('auth.register.stepFamilySubtitle')}
+              section={t('auth.register.stepFamilySection')}
+              percent={60}
+            >
+              <div className="flex flex-col gap-4">
+                <Select
+                  label={t('auth.register.fatherStatus')}
+                  required
+                  placeholder="--- Please select ---"
+                  value={form.fatherStatus}
+                  onChange={(e) => set('fatherStatus', e.target.value)}
+                >
+                  {PARENT_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {t(`profileDetail.parentStatus${enumKey(s)}`)}
+                    </option>
+                  ))}
+                </Select>
+                <Input
+                  label={t('auth.register.fatherOccupation')}
+                  value={form.fatherOccupation}
+                  onChange={(e) => set('fatherOccupation', e.target.value)}
+                />
+                <Select
+                  label={t('auth.register.motherStatus')}
+                  required
+                  placeholder="--- Please select ---"
+                  value={form.motherStatus}
+                  onChange={(e) => set('motherStatus', e.target.value)}
+                >
+                  {PARENT_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {t(`profileDetail.parentStatus${enumKey(s)}`)}
+                    </option>
+                  ))}
+                </Select>
+                <Input
+                  label={t('auth.register.motherOccupation')}
+                  value={form.motherOccupation}
+                  onChange={(e) => set('motherOccupation', e.target.value)}
+                />
+
+                <FieldRow label={t('auth.register.yourSiblings')}>
+                  <div className="grid grid-cols-2 gap-4">
+                    {(
+                      [
+                        ['brothers', 'brothersUnmarried', 'brothersMarried'],
+                        ['sisters', 'sistersUnmarried', 'sistersMarried'],
+                      ] as const
+                    ).map(([groupKey, unmarriedKey, marriedKey]) => (
+                      <div key={groupKey} className="rounded-xl border border-[var(--color-border)] p-3">
+                        <p className="text-center text-sm font-medium text-[var(--color-text)]">
+                          {t(`auth.register.${groupKey}`)}
+                        </p>
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          {(
+                            [
+                              [unmarriedKey, 'notMarried'],
+                              [marriedKey, 'married'],
+                            ] as const
+                          ).map(([field, labelKey]) => (
+                            <Select
+                              key={field}
+                              label={t(`auth.register.${labelKey}`)}
+                              value={form[field]}
+                              onChange={(e) => set(field, e.target.value)}
+                            >
+                              {Array.from({ length: 11 }, (_, i) => (
+                                <option key={i} value={i}>
+                                  {i}
+                                </option>
+                              ))}
+                            </Select>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </FieldRow>
+
+                <LocationPicker required value={form.location} onChange={(v) => set('location', v)} />
+
+                <TextareaField
+                  label={t('auth.register.familyDetails')}
+                  placeholder={t('auth.register.familyDetailsPlaceholder')}
+                  hint={t('auth.register.familyDetailsHint')}
+                  value={form.familyDetails}
+                  onChange={(v) => set('familyDetails', v)}
+                />
+              </div>
+
+              <StepActions
+                loading={saveStep.isPending}
+                disabled={!form.fatherStatus || !form.motherStatus || !form.location.country}
+                onBack={() => setStep('education')}
+                onContinue={() =>
+                  advance('physical', {
+                    fatherStatus: form.fatherStatus,
+                    fatherOccupation: str(form.fatherOccupation),
+                    motherStatus: form.motherStatus,
+                    motherOccupation: str(form.motherOccupation),
+                    brothersUnmarried: num(form.brothersUnmarried),
+                    brothersMarried: num(form.brothersMarried),
+                    sistersUnmarried: num(form.sistersUnmarried),
+                    sistersMarried: num(form.sistersMarried),
+                    // The older single-count fields stay in step with the
+                    // married/unmarried split so profile completion and the
+                    // admin panel keep reading a correct total.
+                    numberOfBrothers: Number(form.brothersUnmarried) + Number(form.brothersMarried),
+                    numberOfSisters: Number(form.sistersUnmarried) + Number(form.sistersMarried),
+                    siblingsCount:
+                      Number(form.brothersUnmarried) +
+                      Number(form.brothersMarried) +
+                      Number(form.sistersUnmarried) +
+                      Number(form.sistersMarried),
+                    familyDetails: str(form.familyDetails),
+                    country: form.location.country,
+                    countryCode: form.location.countryCode || undefined,
+                    state: form.location.state || undefined,
+                    city: form.location.city || undefined,
+                    zip: form.location.zip || undefined,
+                  })
+                }
+              />
+            </WizardStepShell>
+          )}
+
+          {step === 'physical' && (
+            <WizardStepShell
+              icon={PersonStanding}
+              title={t('auth.register.stepPhysicalTitle')}
+              subtitle={t('auth.register.stepPhysicalSubtitle')}
+              section={t('auth.register.stepPhysicalSection')}
+              percent={80}
+            >
+              <div className="flex flex-col gap-4">
+                <Select
+                  label={t('profileDetail.height')}
+                  required
+                  placeholder="--- Select your height ---"
+                  value={form.heightCm}
+                  onChange={(e) => set('heightCm', e.target.value)}
+                >
+                  {HEIGHT_OPTIONS.map((cm) => {
+                    const { feet, inches } = cmToFeetInches(cm);
+                    return (
+                      <option key={cm} value={cm}>
+                        {feet} feet {inches} inch
+                      </option>
+                    );
+                  })}
+                </Select>
+
+                <Select
+                  label={t('auth.register.weight')}
+                  required
+                  placeholder={t('auth.register.selectWeight')}
+                  value={form.weightKg}
+                  onChange={(e) => set('weightKg', e.target.value)}
+                >
+                  {WEIGHT_OPTIONS.map((kg) => (
+                    <option key={kg} value={kg}>
+                      {kg} kg
+                    </option>
+                  ))}
+                </Select>
+
+                <RadioRow
+                  label={t('auth.register.bodyType')}
+                  required
+                  options={BODY_TYPES.map((b) => ({ value: b, label: b }))}
+                  value={form.bodyType}
+                  onChange={(v) => set('bodyType', v)}
+                />
+
+                <RadioRow
+                  label={t('profileDetail.complexion')}
+                  required
+                  options={COMPLEXIONS.map((c) => ({ value: c, label: t(`profileDetail.complexion${enumKey(c)}`) }))}
+                  value={form.complexion}
+                  onChange={(v) => set('complexion', v)}
+                />
+
+                <Select
+                  label={t('profileDetail.bloodGroup')}
+                  placeholder="--- Select blood group ---"
+                  value={form.bloodGroup}
+                  onChange={(e) => set('bloodGroup', e.target.value)}
+                >
+                  {BLOOD_GROUPS.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </Select>
+
+                <TextareaField
+                  label={t('auth.register.physicalDetails')}
+                  placeholder={t('auth.register.physicalDetailsPlaceholder')}
+                  hint={t('auth.register.physicalDetailsHint')}
+                  value={form.physicalDetails}
+                  onChange={(v) => set('physicalDetails', v)}
+                />
+              </div>
+
+              <StepActions
+                loading={saveStep.isPending}
+                disabled={!form.heightCm || !form.weightKg || !form.bodyType || !form.complexion}
+                onBack={() => setStep('family')}
+                onContinue={() =>
+                  advance('lifestyle', {
+                    heightCm: num(form.heightCm),
+                    weightKg: num(form.weightKg),
+                    bodyType: form.bodyType,
+                    complexion: form.complexion,
+                    bloodGroup: str(form.bloodGroup),
+                    physicalDetails: str(form.physicalDetails),
+                  })
+                }
+              />
+            </WizardStepShell>
+          )}
+
+          {step === 'lifestyle' && (
+            <WizardStepShell
+              icon={Heart}
+              title={t('auth.register.stepLifestyleTitle')}
+              subtitle={t('auth.register.stepLifestyleSubtitle')}
+              section={t('auth.register.stepLifestyleSection')}
+              percent={90}
+            >
+              <div className="flex flex-col gap-4">
+                <Select
+                  label={t('auth.register.religiousValue')}
+                  required
+                  placeholder={t('auth.register.selectReligiousValue')}
+                  value={form.religiousValue}
+                  onChange={(e) => set('religiousValue', e.target.value)}
+                >
+                  {RELIGIOUS_VALUES.map((v) => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ))}
+                </Select>
+
+                <RadioRow
+                  label={t('auth.register.familyValues')}
+                  options={FAMILY_VALUES.map((v) => ({
+                    value: v,
+                    label: t(`profileDetail.familyValues${enumKey(v)}`),
+                  }))}
+                  value={form.familyValues}
+                  onChange={(v) => set('familyValues', v)}
+                />
+
+                <RadioRow
+                  label={t('auth.register.diet')}
+                  options={DIETS.map((v) => ({ value: v, label: t(`profileDetail.diet${enumKey(v)}`) }))}
+                  value={form.diet}
+                  onChange={(v) => set('diet', v)}
+                />
+
+                <RadioRow
+                  label={t('auth.register.smoke')}
+                  required
+                  options={SMOKE_OPTIONS.map((v) => ({ value: v, label: t(`profileDetail.smoke${enumKey(v)}`) }))}
+                  value={form.smoke}
+                  onChange={(v) => set('smoke', v)}
+                />
+              </div>
+
+              <StepActions
+                loading={saveStep.isPending}
+                disabled={!form.religiousValue || !form.smoke}
+                onBack={() => setStep('physical')}
+                onContinue={() =>
+                  advance('about', {
+                    religiousValue: form.religiousValue,
+                    familyValues: form.familyValues,
+                    diet: form.diet,
+                    smoke: form.smoke,
+                  })
+                }
+              />
+            </WizardStepShell>
+          )}
+
+          {step === 'about' && (
+            <WizardStepShell
+              icon={UserRound}
+              title={t('auth.register.stepAboutTitle')}
+              subtitle={t('auth.register.stepAboutSubtitle')}
+              section={t('auth.register.stepAboutSection')}
+              percent={100}
+            >
+              <div className="flex flex-col gap-3">
+                <p className="rounded-xl bg-[var(--color-surface)] p-3 text-xs leading-relaxed text-[var(--color-text-muted)]">
+                  {t('auth.register.aboutHint')}
+                </p>
+                <TextareaField
+                  label={t('auth.register.writeAboutYourself')}
+                  required
+                  rows={8}
+                  placeholder={t('auth.register.aboutPlaceholder')}
+                  value={form.bio}
+                  onChange={(v) => set('bio', v)}
+                />
+              </div>
+
+              <StepActions
+                loading={saveStep.isPending}
+                disabled={form.bio.trim().length < 20}
+                onBack={() => setStep('lifestyle')}
+                continueLabel={t('auth.register.completeRegistration')}
+                onContinue={() => advance('location', { bio: form.bio.trim() })}
+              />
+            </WizardStepShell>
           )}
 
           {step === 'location' && (
@@ -406,5 +1099,184 @@ export default function RegisterPage() {
         </motion.div>
       </AnimatePresence>
     </AuthShell>
+  );
+}
+
+const WIZARD_STEPS = ['basic', 'education', 'family', 'physical', 'lifestyle', 'about'] as const;
+type WizardStep = (typeof WIZARD_STEPS)[number];
+
+/** The bdmarriage step chrome: heading, section strip with an N% meter, body. */
+function WizardStepShell({
+  icon: Icon,
+  title,
+  subtitle,
+  section,
+  percent,
+  children,
+}: {
+  icon: typeof Info;
+  title: string;
+  subtitle: string;
+  section: string;
+  percent: number;
+  children: ReactNode;
+}) {
+  const { t } = useLanguage();
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="text-center">
+        <h1 className="font-display text-xl text-[var(--color-text)] sm:text-2xl">{title}</h1>
+        <p className="mt-1 text-sm text-[var(--color-text-muted)]">{subtitle}</p>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
+            <Icon size={18} className="text-[var(--color-primary-accent)]" />
+            {section}
+          </span>
+          <span className="text-sm font-semibold text-[var(--color-text)]">
+            {t('auth.register.percentComplete', { percent })}
+          </span>
+        </div>
+        <div className="mt-2">
+          <ProgressBar percent={percent} />
+        </div>
+      </div>
+
+      {children}
+    </div>
+  );
+}
+
+function StepActions({
+  onBack,
+  onContinue,
+  loading,
+  disabled,
+  continueLabel,
+}: {
+  onBack?: () => void;
+  onContinue: () => void;
+  loading: boolean;
+  disabled: boolean;
+  continueLabel?: string;
+}) {
+  const { t } = useLanguage();
+
+  return (
+    <div className="flex gap-2">
+      {onBack && (
+        <Button variant="secondary" className="flex-1" onClick={onBack} disabled={loading}>
+          {t('common.back')}
+        </Button>
+      )}
+      <Button className="flex-1" onClick={onContinue} loading={loading} disabled={disabled}>
+        {continueLabel ?? t('common.continue')}
+      </Button>
+    </div>
+  );
+}
+
+function FieldRow({
+  label,
+  required,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-sm font-medium text-[var(--color-text-muted)]">
+        {label}
+        {required && <span className="text-[var(--color-danger)]"> *</span>}
+      </span>
+      {children}
+    </div>
+  );
+}
+
+/** The reference collects body type, complexion, diet and smoking as radios. */
+function RadioRow({
+  label,
+  required,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  required?: boolean;
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <FieldRow label={label} required={required}>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className={`h-10 rounded-xl border px-4 text-sm font-medium transition-colors ${
+              value === option.value
+                ? 'gradient-primary border-transparent text-[var(--color-on-primary)]'
+                : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]'
+            }`}
+            aria-pressed={value === option.value}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </FieldRow>
+  );
+}
+
+function TextareaField({
+  label,
+  placeholder,
+  hint,
+  value,
+  onChange,
+  rows = 4,
+  required,
+}: {
+  label: string;
+  placeholder?: string;
+  hint?: string;
+  value: string;
+  onChange: (value: string) => void;
+  rows?: number;
+  required?: boolean;
+}) {
+  return (
+    <FieldRow label={label} required={required}>
+      <textarea
+        rows={rows}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full resize-y rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+      />
+      {hint && (
+        <span className="flex items-start gap-1.5 text-xs text-[var(--color-text-faint)]">
+          <Info size={12} className="mt-0.5 shrink-0" />
+          {hint}
+        </span>
+      )}
+    </FieldRow>
+  );
+}
+
+function LegalLink({ href, labelKey }: { href: string; labelKey: string }) {
+  const { t } = useLanguage();
+  return (
+    <Link href={href} className="text-[var(--color-primary-accent)] hover:underline">
+      {t(labelKey)}
+    </Link>
   );
 }

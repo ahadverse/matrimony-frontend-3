@@ -11,7 +11,8 @@ import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { useWallet } from '@/lib/queries';
 
 const navLinks = [
-  { href: '/browse', labelKey: 'nav.profiles' },
+  { href: '/profiles', labelKey: 'nav.profiles' },
+  { href: '/browse', labelKey: 'nav.discover' },
   { href: '/interests', labelKey: 'nav.interests' },
   { href: '/inbox', labelKey: 'nav.messages' },
   { href: '/dashboard', labelKey: 'nav.dashboard' },

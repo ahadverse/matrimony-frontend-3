@@ -25,10 +25,37 @@ import {
 } from '@/lib/queries';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { MAX_IMAGE_SIZE_MB, validateImageFile } from '@/lib/fileValidation';
-import type { BloodGroup, Complexion, MaritalStatus, MyProfile, ProfileCreatedBy } from '@/lib/types';
+import type {
+  BloodGroup,
+  Complexion,
+  Diet,
+  FamilyValues,
+  MaritalStatus,
+  MyProfile,
+  ParentStatus,
+  ProfileCreatedBy,
+  Smoke,
+} from '@/lib/types';
 import type { EditProfileTab } from '@/lib/profileFieldMap';
+import {
+  COMPLEXIONS,
+  DIETS,
+  FAMILY_VALUES,
+  PARENT_STATUSES,
+  PROFESSIONAL_AREAS,
+  QUALIFICATIONS,
+  RELIGIOUS_VALUES,
+  SMOKE_OPTIONS,
+  WORKING_SECTORS,
+  enumKey,
+} from '@/lib/profileOptions';
 import { EMPTY_LOCATION, type ProfileLocation } from '@/lib/geo';
 import { cmToFeetInches, feetInchesToCm } from '@/lib/height';
+
+/** Blank inputs mean "not answered", not zero. */
+function numberOrUndefined(value: string): number | undefined {
+  return value === '' ? undefined : Number(value);
+}
 
 // Backend clamps heightCm to [120, 220] — keep dropdown options within that range.
 const HEIGHT_MIN_CM = 120;
@@ -78,6 +105,27 @@ interface FormState {
   familyFinancialStatus: string;
   bodyType: string;
   partnerPreferences: string;
+  // Added with the bdmarriage registration flow — editable here so a member can
+  // revise anything the wizard collected.
+  nationality: string;
+  relativeName: string;
+  educationDetails: string;
+  workingSector: string;
+  professionDetails: string;
+  incomeIsPrivate: boolean;
+  fatherStatus: ParentStatus | '';
+  motherStatus: ParentStatus | '';
+  brothersMarried: string;
+  brothersUnmarried: string;
+  sistersMarried: string;
+  sistersUnmarried: string;
+  familyDetails: string;
+  weightKg: string;
+  physicalDetails: string;
+  religiousValue: string;
+  familyValues: FamilyValues | '';
+  diet: Diet | '';
+  smoke: Smoke | '';
 }
 
 function emptyForm(): FormState {
@@ -111,6 +159,25 @@ function emptyForm(): FormState {
     familyFinancialStatus: '',
     bodyType: '',
     partnerPreferences: '',
+    nationality: '',
+    relativeName: '',
+    educationDetails: '',
+    workingSector: '',
+    professionDetails: '',
+    incomeIsPrivate: false,
+    fatherStatus: '',
+    motherStatus: '',
+    brothersMarried: '',
+    brothersUnmarried: '',
+    sistersMarried: '',
+    sistersUnmarried: '',
+    familyDetails: '',
+    weightKg: '',
+    physicalDetails: '',
+    religiousValue: '',
+    familyValues: '',
+    diet: '',
+    smoke: '',
   };
 }
 
@@ -154,6 +221,25 @@ function fillForm(profile: MyProfile): FormState {
     familyFinancialStatus: profile.familyFinancialStatus ?? '',
     bodyType: profile.bodyType ?? '',
     partnerPreferences: profile.partnerPreferences ?? '',
+    nationality: profile.nationality ?? '',
+    relativeName: profile.relativeName ?? '',
+    educationDetails: profile.educationDetails ?? '',
+    workingSector: profile.workingSector ?? '',
+    professionDetails: profile.professionDetails ?? '',
+    incomeIsPrivate: profile.incomeIsPrivate ?? false,
+    fatherStatus: profile.fatherStatus ?? '',
+    motherStatus: profile.motherStatus ?? '',
+    brothersMarried: profile.brothersMarried != null ? String(profile.brothersMarried) : '',
+    brothersUnmarried: profile.brothersUnmarried != null ? String(profile.brothersUnmarried) : '',
+    sistersMarried: profile.sistersMarried != null ? String(profile.sistersMarried) : '',
+    sistersUnmarried: profile.sistersUnmarried != null ? String(profile.sistersUnmarried) : '',
+    familyDetails: profile.familyDetails ?? '',
+    weightKg: profile.weightKg != null ? String(profile.weightKg) : '',
+    physicalDetails: profile.physicalDetails ?? '',
+    religiousValue: profile.religiousValue ?? '',
+    familyValues: profile.familyValues ?? '',
+    diet: profile.diet ?? '',
+    smoke: profile.smoke ?? '',
   };
 }
 
@@ -238,6 +324,25 @@ function EditProfileContent() {
         familyFinancialStatus: form.familyFinancialStatus || undefined,
         bodyType: form.bodyType || undefined,
         partnerPreferences: form.partnerPreferences || undefined,
+        nationality: form.nationality || undefined,
+        relativeName: form.relativeName || undefined,
+        educationDetails: form.educationDetails || undefined,
+        workingSector: form.workingSector || undefined,
+        professionDetails: form.professionDetails || undefined,
+        incomeIsPrivate: form.incomeIsPrivate,
+        fatherStatus: form.fatherStatus || undefined,
+        motherStatus: form.motherStatus || undefined,
+        brothersMarried: numberOrUndefined(form.brothersMarried),
+        brothersUnmarried: numberOrUndefined(form.brothersUnmarried),
+        sistersMarried: numberOrUndefined(form.sistersMarried),
+        sistersUnmarried: numberOrUndefined(form.sistersUnmarried),
+        familyDetails: form.familyDetails || undefined,
+        weightKg: numberOrUndefined(form.weightKg),
+        physicalDetails: form.physicalDetails || undefined,
+        religiousValue: form.religiousValue || undefined,
+        familyValues: form.familyValues || undefined,
+        diet: form.diet || undefined,
+        smoke: form.smoke || undefined,
       } as never,
       {
         onSuccess: () => toast.success(t('editProfile.saved')),
@@ -294,8 +399,42 @@ function EditProfileContent() {
             value={form.location}
             onChange={(next) => set('location', next)}
           />
-          <Input id="field-education" label={t('profileDetail.education')} placeholder="e.g. Bachelor's in CSE" value={form.education} onChange={(e) => set('education', e.target.value)} />
-          <Input id="field-profession" label={t('profileDetail.profession')} placeholder="e.g. Software Engineer" value={form.profession} onChange={(e) => set('profession', e.target.value)} />
+          <Input id="field-nationality" label={t('editProfile.nationality')} placeholder="e.g. Bangladeshi" value={form.nationality} onChange={(e) => set('nationality', e.target.value)} />
+          <Select id="field-education" label={t('profileDetail.education')} placeholder="—" value={form.education} onChange={(e) => set('education', e.target.value)}>
+            {QUALIFICATIONS.map((q) => (
+              <option key={q} value={q}>
+                {q}
+              </option>
+            ))}
+          </Select>
+          <TextareaBlock
+            id="field-educationDetails"
+            label={t('editProfile.educationDetails')}
+            placeholder="e.g. BSc in Computer Science"
+            value={form.educationDetails}
+            onChange={(v) => set('educationDetails', v)}
+          />
+          <Select id="field-workingSector" label={t('editProfile.workingSector')} placeholder="—" value={form.workingSector} onChange={(e) => set('workingSector', e.target.value)}>
+            {WORKING_SECTORS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </Select>
+          <Select id="field-profession" label={t('profileDetail.profession')} placeholder="—" value={form.profession} onChange={(e) => set('profession', e.target.value)}>
+            {PROFESSIONAL_AREAS.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </Select>
+          <TextareaBlock
+            id="field-professionDetails"
+            label={t('editProfile.professionDetails')}
+            placeholder="e.g. Senior Engineer at ABC Ltd."
+            value={form.professionDetails}
+            onChange={(v) => set('professionDetails', v)}
+          />
           <Select
             id="field-maritalStatus"
             label={t('profileDetail.maritalStatus')}
@@ -321,6 +460,14 @@ function EditProfileContent() {
               </option>
             ))}
           </Select>
+          {form.profileCreatedBy !== '' && form.profileCreatedBy !== 'self' && (
+            <Input
+              id="field-relativeName"
+              label={t('editProfile.relativeName')}
+              value={form.relativeName}
+              onChange={(e) => set('relativeName', e.target.value)}
+            />
+          )}
           <Input id="field-motherTongue" label={t('editProfile.motherTongue')} placeholder="e.g. Bangla" value={form.motherTongue} onChange={(e) => set('motherTongue', e.target.value)} />
           <Input id="field-englishComfort" label={t('editProfile.englishComfort')} placeholder="e.g. Fluent, Basic" value={form.englishComfort} onChange={(e) => set('englishComfort', e.target.value)} />
           <Input id="field-residencyStatus" label={t('editProfile.residencyStatus')} placeholder="e.g. Local, Permanent Resident" value={form.residencyStatus} onChange={(e) => set('residencyStatus', e.target.value)} />
@@ -351,13 +498,41 @@ function EditProfileContent() {
         <div className="flex flex-col gap-4">
           <Input id="field-religion" label={t('profileDetail.religion')} placeholder="e.g. Islam" value={form.religion} onChange={(e) => set('religion', e.target.value)} />
           <HeightSelect id="field-heightCm" label={t('profileDetail.height')} valueCm={form.heightCm} onChange={(cm) => set('heightCm', cm)} />
+          <Input id="field-weightKg" label={t('editProfile.weight')} type="number" placeholder="e.g. 62" value={form.weightKg} onChange={(e) => set('weightKg', e.target.value)} />
+          <Select id="field-fatherStatus" label={t('editProfile.fatherStatus')} placeholder="—" value={form.fatherStatus} onChange={(e) => set('fatherStatus', e.target.value as ParentStatus)}>
+            {PARENT_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {t(`profileDetail.parentStatus${enumKey(s)}`)}
+              </option>
+            ))}
+          </Select>
           <Input id="field-fatherOccupation" label={t('profileDetail.fatherOccupation')} placeholder="e.g. Retired Govt. Officer" value={form.fatherOccupation} onChange={(e) => set('fatherOccupation', e.target.value)} />
+          <Select id="field-motherStatus" label={t('editProfile.motherStatus')} placeholder="—" value={form.motherStatus} onChange={(e) => set('motherStatus', e.target.value as ParentStatus)}>
+            {PARENT_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {t(`profileDetail.parentStatus${enumKey(s)}`)}
+              </option>
+            ))}
+          </Select>
           <Input id="field-motherOccupation" label={t('profileDetail.motherOccupation')} placeholder="e.g. Homemaker" value={form.motherOccupation} onChange={(e) => set('motherOccupation', e.target.value)} />
           <Input id="field-siblingsCount" label={t('profileDetail.siblings')} type="number" placeholder="e.g. 3" value={form.siblingsCount} onChange={(e) => set('siblingsCount', e.target.value)} />
           <div className="grid grid-cols-2 gap-3">
             <Input id="field-numberOfSisters" label={t('browse.gateMissing.numberOfSisters')} type="number" placeholder="e.g. 1" value={form.numberOfSisters} onChange={(e) => set('numberOfSisters', e.target.value)} />
             <Input id="field-numberOfBrothers" label={t('browse.gateMissing.numberOfBrothers')} type="number" placeholder="e.g. 2" value={form.numberOfBrothers} onChange={(e) => set('numberOfBrothers', e.target.value)} />
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Input id="field-brothersMarried" label={t('editProfile.brothersMarried')} type="number" value={form.brothersMarried} onChange={(e) => set('brothersMarried', e.target.value)} />
+            <Input id="field-brothersUnmarried" label={t('editProfile.brothersUnmarried')} type="number" value={form.brothersUnmarried} onChange={(e) => set('brothersUnmarried', e.target.value)} />
+            <Input id="field-sistersMarried" label={t('editProfile.sistersMarried')} type="number" value={form.sistersMarried} onChange={(e) => set('sistersMarried', e.target.value)} />
+            <Input id="field-sistersUnmarried" label={t('editProfile.sistersUnmarried')} type="number" value={form.sistersUnmarried} onChange={(e) => set('sistersUnmarried', e.target.value)} />
+          </div>
+          <TextareaBlock
+            id="field-familyDetails"
+            label={t('editProfile.familyDetails')}
+            placeholder="e.g. Explain about your brother, sisters, uncle etc."
+            value={form.familyDetails}
+            onChange={(v) => set('familyDetails', v)}
+          />
           <Select id="field-bloodGroup" label={t('profileDetail.bloodGroup')} placeholder="—" value={form.bloodGroup} onChange={(e) => set('bloodGroup', e.target.value as BloodGroup)}>
             {(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const).map((bg) => (
               <option key={bg} value={bg}>
@@ -366,13 +541,31 @@ function EditProfileContent() {
             ))}
           </Select>
           <Select id="field-complexion" label={t('profileDetail.complexion')} placeholder="—" value={form.complexion} onChange={(e) => set('complexion', e.target.value as Complexion)}>
-            {(['fair', 'medium', 'dark'] as const).map((c) => (
+            {COMPLEXIONS.map((c) => (
               <option key={c} value={c}>
-                {t(`profileDetail.complexion${c.charAt(0).toUpperCase()}${c.slice(1)}`)}
+                {t(`profileDetail.complexion${enumKey(c)}`)}
               </option>
             ))}
           </Select>
-          <Input id="field-monthlyIncome" label={t('profileDetail.monthlyIncome')} type="number" placeholder="e.g. 50000" value={form.monthlyIncome} onChange={(e) => set('monthlyIncome', e.target.value)} />
+          <TextareaBlock
+            id="field-physicalDetails"
+            label={t('editProfile.physicalDetails')}
+            placeholder="e.g. any physical information worth mentioning"
+            value={form.physicalDetails}
+            onChange={(v) => set('physicalDetails', v)}
+          />
+          <div id="field-monthlyIncome">
+            <Input label={t('profileDetail.monthlyIncome')} type="number" placeholder="e.g. 50000" value={form.monthlyIncome} onChange={(e) => set('monthlyIncome', e.target.value)} />
+            <label className="mt-2 flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
+              <input
+                type="checkbox"
+                checked={form.incomeIsPrivate}
+                onChange={(e) => set('incomeIsPrivate', e.target.checked)}
+                className="h-4 w-4 accent-[var(--color-primary)]"
+              />
+              {t('editProfile.keepIncomePrivate')} 🔒
+            </label>
+          </div>
           <Input id="field-companyName" label={t('profileDetail.company')} placeholder="e.g. ABC Ltd." value={form.companyName} onChange={(e) => set('companyName', e.target.value)} />
           <div id="field-presentAddress" className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-[var(--color-text-muted)]">{t('profileDetail.presentAddress')}</label>
@@ -417,6 +610,34 @@ function EditProfileContent() {
               </option>
             ))}
           </Select>
+          <Select id="field-religiousValue" label={t('editProfile.religiousValue')} placeholder="—" value={form.religiousValue} onChange={(e) => set('religiousValue', e.target.value)}>
+            {RELIGIOUS_VALUES.map((v) => (
+              <option key={v} value={v}>
+                {v}
+              </option>
+            ))}
+          </Select>
+          <Select id="field-familyValues" label={t('editProfile.familyValues')} placeholder="—" value={form.familyValues} onChange={(e) => set('familyValues', e.target.value as FamilyValues)}>
+            {FAMILY_VALUES.map((v) => (
+              <option key={v} value={v}>
+                {t(`profileDetail.familyValues${enumKey(v)}`)}
+              </option>
+            ))}
+          </Select>
+          <Select id="field-diet" label={t('editProfile.diet')} placeholder="—" value={form.diet} onChange={(e) => set('diet', e.target.value as Diet)}>
+            {DIETS.map((v) => (
+              <option key={v} value={v}>
+                {t(`profileDetail.diet${enumKey(v)}`)}
+              </option>
+            ))}
+          </Select>
+          <Select id="field-smoke" label={t('editProfile.smoke')} placeholder="—" value={form.smoke} onChange={(e) => set('smoke', e.target.value as Smoke)}>
+            {SMOKE_OPTIONS.map((v) => (
+              <option key={v} value={v}>
+                {t(`profileDetail.smoke${enumKey(v)}`)}
+              </option>
+            ))}
+          </Select>
         </div>
       )}
 
@@ -444,6 +665,36 @@ export default function EditProfilePage() {
     <Suspense fallback={null}>
       <EditProfileContent />
     </Suspense>
+  );
+}
+
+/** The multi-line field shape this page already uses, extracted for reuse. */
+function TextareaBlock({
+  id,
+  label,
+  placeholder,
+  value,
+  onChange,
+  rows = 3,
+}: {
+  id: string;
+  label: string;
+  placeholder?: string;
+  value: string;
+  onChange: (value: string) => void;
+  rows?: number;
+}) {
+  return (
+    <div id={id} className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-[var(--color-text-muted)]">{label}</label>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={rows}
+        placeholder={placeholder}
+        className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
+      />
+    </div>
   );
 }
 

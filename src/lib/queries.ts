@@ -18,6 +18,7 @@ import type {
   MyVerification,
   ProfileDetail,
   ProfilePreview,
+  PublicProfilesPage,
   PublicStats,
   WalletInfo,
   WalletTransaction,
@@ -117,6 +118,48 @@ export function useBrowseFeedInfinite(filters: BrowseFilters = {}, enabled = tru
     getNextPageParam: (lastPage) =>
       lastPage.page * lastPage.pageSize < lastPage.total ? lastPage.page + 1 : undefined,
     enabled,
+    staleTime: 30_000,
+  });
+}
+
+export interface PublicProfileFilters {
+  gender?: string;
+  ageMin?: number;
+  ageMax?: number;
+  heightMinCm?: number;
+  heightMaxCm?: number;
+  /** Home division — the reference sidebar's top-level location filter. */
+  division?: string;
+  district?: string;
+  country?: string;
+  education?: string;
+  profession?: string;
+  workingSector?: string;
+  religion?: string;
+  maritalStatus?: string;
+  publicId?: string;
+}
+
+/**
+ * The public profiles directory. Unauthenticated by design — `api` omits the
+ * bearer header when there is no token — but a signed-in visitor's token still
+ * goes along, and that is what marks their already-unlocked profiles.
+ *
+ * The token is not part of the query key: it is read at fetch time, and
+ * logging out clears the whole cache (see AvatarMenu), so one account's
+ * unlocked names can't be served to the next.
+ */
+export function usePublicProfiles(filters: PublicProfileFilters, page: number) {
+  return useQuery({
+    queryKey: ['public-profiles', filters, page],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(filters)) {
+        if (value !== undefined && value !== '') params.set(key, String(value));
+      }
+      params.set('page', String(page));
+      return api.get<PublicProfilesPage>(`profiles/public?${params.toString()}`);
+    },
     staleTime: 30_000,
   });
 }
@@ -315,10 +358,11 @@ export function usePublicStats() {
   });
 }
 
-export function useWallet() {
+export function useWallet(enabled = true) {
   return useQuery({
     queryKey: ['wallet'],
     queryFn: () => api.get<WalletInfo>('wallet'),
+    enabled,
   });
 }
 

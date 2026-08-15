@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Compass, HeartHandshake, MessageCircle, UserRound } from 'lucide-react';
+import { Compass, HeartHandshake, MessageCircle, Users, UserRound } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { useLikesYou, useUnreadCount } from '@/lib/queries';
 
 const tabs = [
-  { href: '/browse', icon: Compass, labelKey: 'nav.browse' },
+  { href: '/profiles', icon: Users, labelKey: 'nav.profiles' },
+  { href: '/browse', icon: Compass, labelKey: 'nav.discover' },
   { href: '/interests', icon: HeartHandshake, labelKey: 'nav.interests' },
   { href: '/inbox', icon: MessageCircle, labelKey: 'nav.inbox' },
   { href: '/dashboard', icon: UserRound, labelKey: 'nav.tabProfile' },

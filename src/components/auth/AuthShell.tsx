@@ -1,8 +1,13 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Heart } from 'lucide-react';
+import clsx from 'clsx';
 
-export function AuthShell({ children }: { children: ReactNode }) {
+/**
+ * `wide` is for the registration wizard, whose two-column form rows do not fit
+ * the login card's width. Everything else keeps the narrow default.
+ */
+export function AuthShell({ children, wide }: { children: ReactNode; wide?: boolean }) {
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-6 py-12">
       <div
@@ -26,7 +31,12 @@ export function AuthShell({ children }: { children: ReactNode }) {
       <Link href="/" className="relative z-10 mb-8 font-display text-2xl gradient-text">
         BiyeKoraLagbe
       </Link>
-      <div className="surface-card ring-1 ring-inset ring-[var(--color-gold)]/20 relative z-10 w-full max-w-sm rounded-2xl p-6 shadow-xl sm:p-8">
+      <div
+        className={clsx(
+          'surface-card ring-1 ring-inset ring-[var(--color-gold)]/20 relative z-10 w-full rounded-2xl p-6 shadow-xl sm:p-8',
+          wide ? 'max-w-2xl' : 'max-w-sm',
+        )}
+      >
         {children}
       </div>
     </div>

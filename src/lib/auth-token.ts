@@ -1,5 +1,6 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import { SESSION_COOKIE } from './session';
 
 const TOKEN_KEY = 'bk_token';
@@ -27,4 +28,30 @@ export function clearToken(): void {
   if (typeof window === 'undefined') return;
   window.localStorage.removeItem(TOKEN_KEY);
   document.cookie = `${SESSION_COOKIE}=; path=/; max-age=0; samesite=lax`;
+}
+
+/**
+ * Whether there is a session, safe to read during render.
+ *
+ * `getToken` touches localStorage, which doesn't exist while Next prerenders,
+ * so reading it directly in a component would make the server and the first
+ * client render disagree. `useSyncExternalStore` is the primitive for exactly
+ * this: the server snapshot is always `false`, the client snapshot reads the
+ * real token, and React reconciles the difference itself. Signing out in
+ * another tab fires a `storage` event, which re-reads it.
+ *
+ * Pages open to both signed-in and anonymous visitors — the public profiles
+ * directory — use this to decide whether a logged-in-only query is worth firing.
+ */
+export function useIsSignedIn(): boolean {
+  return useSyncExternalStore(subscribeToToken, hasToken, () => false);
+}
+
+function subscribeToToken(onChange: () => void): () => void {
+  window.addEventListener('storage', onChange);
+  return () => window.removeEventListener('storage', onChange);
+}
+
+function hasToken(): boolean {
+  return !!getToken();
 }
