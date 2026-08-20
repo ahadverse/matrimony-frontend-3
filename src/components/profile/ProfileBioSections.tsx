@@ -84,6 +84,11 @@ export function ProfileBioSections({ profile }: { profile: LockedProfile | Unloc
           label: t('profileDetail.relativeName'),
           value: profile.locked ? null : optional(profile.relativeName),
         },
+        {
+          icon: Phone,
+          label: t('profileDetail.relativePhone'),
+          value: profile.locked ? null : optional(profile.relativePhone),
+        },
       ],
     },
     {

@@ -14,14 +14,9 @@ const AGE_OPTIONS = Array.from({ length: MAX_AGE - MIN_AGE + 1 }, (_, i) => MIN_
 const DEFAULT_AGE_MIN = 18;
 const DEFAULT_AGE_MAX = 40;
 
-// Browse is behind auth (see proxy.ts), so a logged-out search here bounces
-// through /login?redirect=/browse?<filters> and lands back on /browse with
-// the same filters once signed in — the query string rides along untouched.
-//
-// "Looking For" isn't wired to a real filter: the browse feed already only
-// shows the signed-in user's opposite gender (see swipes.service.ts), so
-// there's no backend param for it. It stays here purely for the layout —
-// same reason its value is never added to the search params below.
+// The public directory (see public-profiles.controller.ts) needs no auth and
+// takes gender/age/religion/profession as real filters, so a search here
+// lands straight on /profiles with them applied — no login bounce needed.
 export function HeroMatchFinder() {
   const { t } = useLanguage();
   const router = useRouter();
@@ -33,11 +28,12 @@ export function HeroMatchFinder() {
 
   function search() {
     const params = new URLSearchParams();
+    params.set('gender', lookingFor);
     params.set('ageMin', String(ageMin));
     params.set('ageMax', String(ageMax));
     if (religion) params.set('religion', religion);
     if (profession) params.set('profession', profession);
-    router.push(`/browse?${params.toString()}`);
+    router.push(`/profiles?${params.toString()}`);
   }
 
   return (

@@ -109,7 +109,7 @@ function LockedProfileView({ userId }: { userId: string }) {
   return (
     <ProfileLayout
       profile={preview}
-      heading={preview.publicId ?? t('profileDetail.lockedHiddenName')}
+      heading={preview.name}
       photos={preview.photos}
       blurPhotos
       badge={

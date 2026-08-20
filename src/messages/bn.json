@@ -785,6 +785,7 @@
     "unlockError": "প্রোফাইলটি আনলক করা যায়নি।",
     "interestError": "আগ্রহ পাঠানো যায়নি।",
     "messageError": "কথোপকথন খোলা যায়নি।",
+    "messageLocked": "মেসেজ পাঠাতে প্রোফাইলটি আনলক করুন।",
     "complexionVeryFair": "খুব ফর্সা",
     "complexionWheatish": "শ্যামলা",
     "sectionBasic": "মৌলিক তথ্য",
@@ -800,6 +801,7 @@
     "email": "ইমেইল",
     "nationality": "জাতীয়তা",
     "relativeName": "প্রোফাইল পরিচালনা করছেন",
+    "relativePhone": "অভিভাবকের ফোন নম্বর",
     "educationDetails": "শিক্ষার বিবরণ",
     "professionDetails": "পেশার বিবরণ",
     "workingSector": "কর্মক্ষেত্র",
@@ -869,6 +871,7 @@
     "weight": "ওজন",
     "nationality": "জাতীয়তা",
     "relativeName": "আত্মীয়ের নাম",
+    "relativePhone": "অভিভাবকের ফোন নম্বর",
     "educationDetails": "শিক্ষার বিবরণ",
     "workingSector": "কর্মক্ষেত্র",
     "professionDetails": "পেশার বিবরণ",
@@ -951,6 +954,30 @@
     "resultFailedBody": "কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।",
     "backToWallet": "ওয়ালেটে ফিরে যান",
     "viewFullHistory": "সম্পূর্ণ ইতিহাস দেখুন",
+    "region": {
+      "label": "আপনি কোথা থেকে টপ-আপ করছেন?",
+      "bangladesh": "বাংলাদেশ",
+      "international": "আন্তর্জাতিক"
+    },
+    "international": {
+      "title": "আন্তর্জাতিক টপ-আপ",
+      "body": "বাংলাদেশের বাইরে থেকে এখনো আমরা স্বয়ংক্রিয় পেমেন্ট সাপোর্ট করি না। আমাদের সাপোর্ট টিমের সাথে চ্যাট করুন, আমরা ম্যানুয়ালি আপনার টপ-আপ ব্যবস্থা করে দেব।",
+      "cta": "সাপোর্টের সাথে চ্যাট করুন"
+    },
+    "manualBkash": {
+      "sectionTitle": "অথবা ম্যানুয়ালি টাকা পাঠান",
+      "instructions": "আপনার বিকাশ অ্যাপ থেকে {amount} নিচের নম্বরে পাঠান, তারপর কনফার্মেশন এসএমএস থেকে ট্রানজেকশন আইডি জমা দিন।",
+      "merchantNumberLabel": "বিকাশ নম্বর (সেন্ড মানি)",
+      "copy": "কপি করুন",
+      "copied": "কপি হয়েছে",
+      "trxIdLabel": "ট্রানজেকশন আইডি (TrxID)",
+      "trxIdPlaceholder": "যেমন AJ7B9K2XQ1",
+      "payerNumberLabel": "আপনার বিকাশ নম্বর",
+      "payerNumberPlaceholder": "01XXXXXXXXX",
+      "submit": "যাচাইয়ের জন্য জমা দিন",
+      "submitted": "জমা হয়েছে! আমরা যাচাই করে আপনার ওয়ালেটে টাকা যোগ করব।",
+      "pendingNote": "ম্যানুয়াল টপ-আপ আমাদের টিম যাচাই করে, সাধারণত কয়েক ঘণ্টার মধ্যে।"
+    },
     "history": {
       "title": "টপ-আপ ইতিহাস",
       "filterAll": "সব কার্যকলাপ",
@@ -958,6 +985,13 @@
       "loadMore": "আরও দেখুন",
       "empty": "এখনো কোনো লেনদেন নেই।"
     }
+  },
+  "support": {
+    "title": "সাপোর্ট",
+    "subtitle": "সাধারণত আমরা কয়েক ঘণ্টার মধ্যে উত্তর দিই",
+    "placeholder": "আপনার বার্তা লিখুন…",
+    "empty": "একটি বার্তা পাঠান, আমাদের টিম আপনাকে টপ-আপ করতে সাহায্য করবে।",
+    "close": "বন্ধ করুন"
   },
   "profiles": {
     "title": "প্রোফাইল",

@@ -1,14 +1,19 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { BadgeCheck, Lock, Sparkles } from 'lucide-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import toast from 'react-hot-toast';
+import { BadgeCheck, Heart, Lock, MessageCircle, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { resolveUploadUrl } from '@/lib/api-client';
+import { ApiError, resolveUploadUrl } from '@/lib/api-client';
+import { useIsSignedIn } from '@/lib/auth-token';
 import { formatHeight } from '@/lib/height';
 import { formatLocation } from '@/lib/geo';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
+import { useConversations, useStartConversation, useSwipeMutation } from '@/lib/queries';
 import type { PublicProfileCard } from '@/lib/types';
 
 interface PublicProfileRowProps {
@@ -29,9 +34,7 @@ interface PublicProfileRowProps {
 export function PublicProfileRow({ profile, unlockCost, onUnlock, unlocking }: PublicProfileRowProps) {
   const { t } = useLanguage();
   const photo = resolveUploadUrl(profile.photoUrl);
-  const heading = profile.locked
-    ? (profile.publicId ?? t('profileDetail.lockedHiddenName'))
-    : profile.name;
+  const heading = profile.name ?? profile.publicId ?? t('profileDetail.lockedHiddenName');
 
   const stats: [string, string | null][] = [
     [t('profiles.age'), profile.age ? `${profile.age} ${t('common.years')}` : null],
@@ -102,18 +105,111 @@ export function PublicProfileRow({ profile, unlockCost, onUnlock, unlocking }: P
         )}
 
         <div className="mt-auto flex flex-wrap gap-2 pt-3">
-          {profile.locked ? (
+          {profile.locked && (
             <Button variant="gold" size="md" onClick={onUnlock} loading={unlocking}>
               <Lock size={14} />
               {unlockCost ? t('profiles.unlockFor', { cost: unlockCost }) : t('profiles.unlock')}
             </Button>
-          ) : (
-            <Link href={`/profile/${profile.userId}`}>
-              <Button size="md">{t('profiles.viewProfile')}</Button>
-            </Link>
           )}
+          <Link href={`/profile/${profile.userId}`}>
+            <Button variant="secondary" size="md">
+              {t('profiles.viewProfile')}
+            </Button>
+          </Link>
+          <RowActions userId={profile.userId} locked={profile.locked} />
         </div>
       </div>
     </Card>
+  );
+}
+
+/**
+ * Interest + Message live outside the lock gate that guards Unlock/View
+ * Profile above — sending interest never required an unlock (see the
+ * interests page's own SendInterestBackButton), and messaging only needs one
+ * once a match already exists here, so both read straight off `useConversations`
+ * rather than duplicating the profile-detail page's gating logic.
+ */
+function RowActions({ userId, locked }: { userId: string; locked: boolean }) {
+  const { t } = useLanguage();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const signedIn = useIsSignedIn();
+  const { data: conversations } = useConversations(signedIn);
+  const swipe = useSwipeMutation();
+  const startConversation = useStartConversation();
+  const [interestSent, setInterestSent] = useState(false);
+
+  const conversationId = conversations?.find((c) => c.otherUser?.id === userId)?.id;
+
+  // An anonymous visitor hitting either action would only 401 — bounce them to
+  // login with a return path so they land back on this list, same as onUnlock
+  // in the parent page.
+  function requireSignIn() {
+    router.push(`/login?redirect=${encodeURIComponent(`${pathname}?${searchParams.toString()}`)}`);
+  }
+
+  function sendInterest() {
+    if (!signedIn) {
+      requireSignIn();
+      return;
+    }
+    swipe.mutate(
+      { targetId: userId, action: 'like' },
+      {
+        onSuccess: () => setInterestSent(true),
+        onError: (error) => {
+          // A 409 here just means a prior visit already sent this interest —
+          // treat it the same as success rather than surfacing an error.
+          if (error instanceof ApiError && error.status === 409) {
+            setInterestSent(true);
+            return;
+          }
+          toast.error(t('profileDetail.interestError'));
+        },
+      },
+    );
+  }
+
+  function openMessage() {
+    if (!signedIn) {
+      requireSignIn();
+      return;
+    }
+    if (conversationId) {
+      router.push(`/inbox/${conversationId}`);
+      return;
+    }
+    if (locked) {
+      toast.error(t('profileDetail.messageLocked'));
+      return;
+    }
+    startConversation.mutate(userId, {
+      onSuccess: (data) => router.push(`/inbox/${data.conversationId}`),
+      onError: (error) =>
+        toast.error(error instanceof ApiError ? String(error.message) : t('profileDetail.messageError')),
+    });
+  }
+
+  return (
+    <>
+      {!conversationId && (
+        <Button
+          variant="secondary"
+          size="md"
+          onClick={sendInterest}
+          disabled={interestSent}
+          loading={swipe.isPending}
+        >
+          <Heart size={14} />
+          {interestSent ? t('interests.interestSent') : t('browse.sendInterest')}
+        </Button>
+      )}
+      <Button size="md" onClick={openMessage} loading={startConversation.isPending}>
+        <MessageCircle size={14} />
+        {t('interests.message')}
+      </Button>
+    </>
   );
 }

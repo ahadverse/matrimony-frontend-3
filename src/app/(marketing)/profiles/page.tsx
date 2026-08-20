@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -31,6 +31,42 @@ const MAX_AGE = 70;
 const MIN_HEIGHT_CM = feetInchesToCm(4, 0);
 const MAX_HEIGHT_CM = feetInchesToCm(6, 6);
 
+const STRING_FILTER_KEYS = [
+  'gender',
+  'division',
+  'district',
+  'country',
+  'education',
+  'profession',
+  'workingSector',
+  'religion',
+  'maritalStatus',
+  'publicId',
+] as const satisfies readonly (keyof PublicProfileFilters)[];
+
+const NUMBER_FILTER_KEYS = [
+  'ageMin',
+  'ageMax',
+  'heightMinCm',
+  'heightMaxCm',
+] as const satisfies readonly (keyof PublicProfileFilters)[];
+
+// The homepage's hero search (and any other deep link) hands its criteria off
+// as query params rather than router state, so the directory has to read them
+// back out on first render instead of always starting from an empty filter set.
+function filtersFromSearchParams(params: URLSearchParams): PublicProfileFilters {
+  const filters: PublicProfileFilters = {};
+  for (const key of STRING_FILTER_KEYS) {
+    const value = params.get(key);
+    if (value) filters[key] = value;
+  }
+  for (const key of NUMBER_FILTER_KEYS) {
+    const value = params.get(key);
+    if (value) filters[key] = Number(value);
+  }
+  return filters;
+}
+
 export default function PublicProfilesPage() {
   const { t } = useLanguage();
   return (
@@ -46,7 +82,7 @@ function PublicProfilesContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [filters, setFilters] = useState<PublicProfileFilters>({});
+  const [filters, setFilters] = useState<PublicProfileFilters>(() => filtersFromSearchParams(searchParams));
   const [page, setPage] = useState(1);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const signedIn = useIsSignedIn();
@@ -57,6 +93,7 @@ function PublicProfilesContent() {
   const { data: wallet } = useWallet(signedIn);
   const unlockMutation = useUnlockProfile();
   const [unlockingId, setUnlockingId] = useState<string | null>(null);
+  const [confirmUnlockId, setConfirmUnlockId] = useState<string | null>(null);
 
   const applyFilters = useCallback((next: PublicProfileFilters) => {
     setFilters(next);
@@ -68,14 +105,19 @@ function PublicProfilesContent() {
     [filters],
   );
 
-  function unlock(userId: string) {
+  function requestUnlock(userId: string) {
     // Sending an anonymous visitor to the unlock endpoint would only 401 — bounce
     // them to login with a return path so they land back on this list.
     if (!signedIn) {
       router.push(`/login?redirect=${encodeURIComponent(`${pathname}?${searchParams.toString()}`)}`);
       return;
     }
+    setConfirmUnlockId(userId);
+  }
 
+  function confirmUnlock() {
+    if (!confirmUnlockId) return;
+    const userId = confirmUnlockId;
     setUnlockingId(userId);
     unlockMutation.mutate(userId, {
       onSuccess: () => {
@@ -92,7 +134,10 @@ function PublicProfilesContent() {
           toast.error(t('profileDetail.unlockError'));
         }
       },
-      onSettled: () => setUnlockingId(null),
+      onSettled: () => {
+        setUnlockingId(null);
+        setConfirmUnlockId(null);
+      },
     });
   }
 
@@ -160,7 +205,7 @@ function PublicProfilesContent() {
                   key={profile.userId}
                   profile={profile}
                   unlockCost={unlockCost}
-                  onUnlock={() => unlock(profile.userId)}
+                  onUnlock={() => requestUnlock(profile.userId)}
                   unlocking={unlockingId === profile.userId}
                 />
               ))}
@@ -179,6 +224,25 @@ function PublicProfilesContent() {
             setFilterModalOpen(false);
           }}
         />
+      </Modal>
+
+      <Modal open={!!confirmUnlockId} onClose={() => setConfirmUnlockId(null)} title={t('likesYou.unlockModalTitle')}>
+        <div className="flex flex-col gap-4">
+          <p className="rounded-xl bg-[var(--color-gold-tint)] p-3 text-sm font-medium text-[var(--color-gold-accent)]">
+            {t('likesYou.unlockModalBody', { cost: unlockCost ?? `${t('common.taka')}${wallet?.profileViewCost ?? 0}` })}
+          </p>
+          <p className="text-xs text-[var(--color-text-faint)]">
+            {t('likesYou.walletBalance', { balance: `${t('common.taka')}${wallet?.balance ?? 0}` })}
+          </p>
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setConfirmUnlockId(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="gold" className="flex-1" onClick={confirmUnlock} loading={unlockMutation.isPending}>
+              {t('common.confirm')}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
@@ -384,8 +448,8 @@ function FiltersPanel({
       />
 
       <div className="flex gap-2">
-        <Button variant="secondary" size="md" className="flex-1" onClick={clear}>
-          {t('profiles.clearAll')}
+        <Button variant="secondary" size="md" onClick={clear} aria-label={t('profiles.clearAll')}>
+          <X size={16} />
         </Button>
         <Button size="md" className="flex-1" onClick={apply}>
           <Search size={14} /> {t('profiles.applyFilters')}

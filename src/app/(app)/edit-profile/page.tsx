@@ -109,6 +109,7 @@ interface FormState {
   // revise anything the wizard collected.
   nationality: string;
   relativeName: string;
+  relativePhone: string;
   educationDetails: string;
   workingSector: string;
   professionDetails: string;
@@ -161,6 +162,7 @@ function emptyForm(): FormState {
     partnerPreferences: '',
     nationality: '',
     relativeName: '',
+    relativePhone: '',
     educationDetails: '',
     workingSector: '',
     professionDetails: '',
@@ -223,6 +225,7 @@ function fillForm(profile: MyProfile): FormState {
     partnerPreferences: profile.partnerPreferences ?? '',
     nationality: profile.nationality ?? '',
     relativeName: profile.relativeName ?? '',
+    relativePhone: profile.relativePhone ?? '',
     educationDetails: profile.educationDetails ?? '',
     workingSector: profile.workingSector ?? '',
     professionDetails: profile.professionDetails ?? '',
@@ -326,6 +329,7 @@ function EditProfileContent() {
         partnerPreferences: form.partnerPreferences || undefined,
         nationality: form.nationality || undefined,
         relativeName: form.relativeName || undefined,
+        relativePhone: form.relativePhone || undefined,
         educationDetails: form.educationDetails || undefined,
         workingSector: form.workingSector || undefined,
         professionDetails: form.professionDetails || undefined,
@@ -461,12 +465,21 @@ function EditProfileContent() {
             ))}
           </Select>
           {form.profileCreatedBy !== '' && form.profileCreatedBy !== 'self' && (
-            <Input
-              id="field-relativeName"
-              label={t('editProfile.relativeName')}
-              value={form.relativeName}
-              onChange={(e) => set('relativeName', e.target.value)}
-            />
+            <>
+              <Input
+                id="field-relativeName"
+                label={t('editProfile.relativeName')}
+                value={form.relativeName}
+                onChange={(e) => set('relativeName', e.target.value)}
+              />
+              <Input
+                id="field-relativePhone"
+                label={t('editProfile.relativePhone')}
+                placeholder="+8801700000000"
+                value={form.relativePhone}
+                onChange={(e) => set('relativePhone', e.target.value)}
+              />
+            </>
           )}
           <Input id="field-motherTongue" label={t('editProfile.motherTongue')} placeholder="e.g. Bangla" value={form.motherTongue} onChange={(e) => set('motherTongue', e.target.value)} />
           <Input id="field-englishComfort" label={t('editProfile.englishComfort')} placeholder="e.g. Fluent, Basic" value={form.englishComfort} onChange={(e) => set('englishComfort', e.target.value)} />

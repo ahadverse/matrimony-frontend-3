@@ -139,6 +139,7 @@ export interface MyProfile extends LocationFields, ProfileBioData {
   publicId: string | null;
   name: string;
   relativeName: string | null;
+  relativePhone: string | null;
   /** Only ever returned for your own profile — never on someone else's card. */
   zip: string | null;
   presentAddress: string | null;
@@ -205,6 +206,7 @@ export interface LockedProfile extends CoarseLocationFields, ProfileBioData {
 export interface UnlockedProfile extends Omit<LockedProfile, 'locked'>, LocationFields {
   name: string;
   relativeName: string | null;
+  relativePhone: string | null;
   phone: string;
   email: string | null;
   presentAddress: string | null;
@@ -218,12 +220,20 @@ export type ProfileDetail = UnlockedProfile;
 /** What `GET /profile-views/:id/preview` returns — the paywall teaser. */
 export interface ProfilePreview extends LockedProfile {
   photoUrl: string | null;
+  /** Named up front, same as the public directory, rather than hidden behind the paywall. */
+  name: string;
 }
 
 /** One row of `GET /profiles/public`; locked or unlocked per viewer. */
 export type PublicProfileCard = (LockedProfile | UnlockedProfile) & {
   photoUrl: string | null;
   isSpotlighted: boolean;
+  /**
+   * Unlike every other locked view, the directory shows the real name even
+   * before unlock — so a still-locked row carries it too, not just an
+   * unlocked one.
+   */
+  name?: string;
 };
 
 export interface PublicProfilesPage {
@@ -239,6 +249,7 @@ export interface WalletInfo {
   minTopupAmount: number;
   spotlightCost: number;
   spotlightDurationHours: number;
+  bkashMerchantNumber: string;
 }
 
 export interface PublicStats {
@@ -277,6 +288,16 @@ export interface ChatMessage {
   type: MessageType;
   body: string | null;
   imageUrl: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface SupportMessage {
+  id: string;
+  userId: string;
+  senderId: string;
+  senderRole: 'user' | 'admin';
+  body: string;
   readAt: string | null;
   createdAt: string;
 }

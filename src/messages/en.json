@@ -785,6 +785,7 @@
     "unlockError": "Could not unlock this profile.",
     "interestError": "Could not send interest.",
     "messageError": "Could not open the conversation.",
+    "messageLocked": "Unlock this profile to send a message.",
     "complexionVeryFair": "Very Fair",
     "complexionWheatish": "Wheatish",
     "sectionBasic": "Basic Information",
@@ -800,6 +801,7 @@
     "email": "Email",
     "nationality": "Nationality",
     "relativeName": "Profile managed by",
+    "relativePhone": "Guardian's phone number",
     "educationDetails": "Education details",
     "professionDetails": "Profession details",
     "workingSector": "Working sector",
@@ -869,6 +871,7 @@
     "weight": "Weight",
     "nationality": "Nationality",
     "relativeName": "Relative name",
+    "relativePhone": "Guardian's phone number",
     "educationDetails": "Education details",
     "workingSector": "Working sector",
     "professionDetails": "Profession details",
@@ -951,6 +954,30 @@
     "resultFailedBody": "Something went wrong. Please try again.",
     "backToWallet": "Back to wallet",
     "viewFullHistory": "View full history",
+    "region": {
+      "label": "Where are you topping up from?",
+      "bangladesh": "Bangladesh",
+      "international": "International"
+    },
+    "international": {
+      "title": "International top-up",
+      "body": "We don't yet support automatic payments from outside Bangladesh. Chat with our support team and we'll arrange your top-up manually.",
+      "cta": "Chat with Support"
+    },
+    "manualBkash": {
+      "sectionTitle": "Or send money manually",
+      "instructions": "Send {amount} from your bKash app to the number below, then submit the Transaction ID from the confirmation SMS.",
+      "merchantNumberLabel": "bKash number (Send Money)",
+      "copy": "Copy",
+      "copied": "Copied",
+      "trxIdLabel": "Transaction ID (TrxID)",
+      "trxIdPlaceholder": "e.g. AJ7B9K2XQ1",
+      "payerNumberLabel": "Your bKash number",
+      "payerNumberPlaceholder": "01XXXXXXXXX",
+      "submit": "Submit for verification",
+      "submitted": "Submitted! We'll verify and credit your wallet shortly.",
+      "pendingNote": "Manual top-ups are checked by our team, usually within a few hours."
+    },
     "history": {
       "title": "Top-up History",
       "filterAll": "All activity",
@@ -958,6 +985,13 @@
       "loadMore": "Load more",
       "empty": "No transactions yet."
     }
+  },
+  "support": {
+    "title": "Support",
+    "subtitle": "We typically reply within a few hours",
+    "placeholder": "Type your message…",
+    "empty": "Send a message and our team will help you top up.",
+    "close": "Close"
   },
   "profiles": {
     "title": "Profiles",

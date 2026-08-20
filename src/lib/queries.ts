@@ -20,6 +20,7 @@ import type {
   ProfilePreview,
   PublicProfilesPage,
   PublicStats,
+  SupportMessage,
   WalletInfo,
   WalletTransaction,
 } from './types';
@@ -373,6 +374,33 @@ interface TransactionsPage {
   pageSize: number;
 }
 
+export interface SupportThreadPage {
+  items: SupportMessage[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export function useSupportMessages(enabled: boolean) {
+  return useQuery({
+    queryKey: ['support-messages'],
+    queryFn: () => api.get<SupportThreadPage>('support/messages'),
+    enabled,
+  });
+}
+
+export function useSendSupportMessage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: string) => api.post<SupportMessage>('support/messages', { body }),
+    onSuccess: (message) => {
+      queryClient.setQueryData<SupportThreadPage | undefined>(['support-messages'], (old) =>
+        old ? { ...old, items: [...old.items, message], total: old.total + 1 } : old,
+      );
+    },
+  });
+}
+
 export function useWalletTransactions(params: { pageSize?: number; type?: WalletTransaction['type'] } = {}) {
   const { pageSize = 20, type } = params;
   return useQuery({
@@ -497,10 +525,11 @@ export function useSubmitVerification() {
   });
 }
 
-export function useConversations() {
+export function useConversations(enabled = true) {
   return useQuery({
     queryKey: ['conversations'],
     queryFn: () => api.get<Conversation[]>('conversations'),
+    enabled,
   });
 }
 
