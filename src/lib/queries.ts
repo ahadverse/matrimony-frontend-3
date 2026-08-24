@@ -560,6 +560,22 @@ export function useMessages(conversationId: string | null) {
   });
 }
 
+export function useBlockUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => api.post<{ success: true }>(`blocks/${userId}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['conversations'] }),
+  });
+}
+
+export function useUnblockUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => api.delete<{ success: true }>(`blocks/${userId}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['conversations'] }),
+  });
+}
+
 export function useSendImageMessage(conversationId: string) {
   return useMutation({
     mutationFn: (file: File) => {

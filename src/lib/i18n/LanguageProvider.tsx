@@ -33,7 +33,7 @@ function interpolate(template: string, vars?: Record<string, string | number>): 
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('en');
+  const [locale, setLocaleState] = useState<Locale>('bn');
 
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY);

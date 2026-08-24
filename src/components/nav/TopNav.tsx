@@ -22,9 +22,10 @@ export function TopNav() {
 
   return (
     <header className="relative sticky top-0 z-30 border-b border-[var(--color-border)] bg-[var(--color-bg)]/90 backdrop-blur-md">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link href="/" className="font-display text-xl gradient-text">
-          {t('landing.brand')}
+      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 sm:px-6">
+        <Link href="/" className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt={t('landing.brand')} className="h-16 w-16" />
         </Link>
 
         <div className="hidden items-center gap-7 md:flex">

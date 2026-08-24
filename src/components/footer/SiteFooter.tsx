@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 
 const platformLinks = [
+  { href: '/', labelKey: 'footer.home' },
   { href: '/profiles', labelKey: 'nav.profiles' },
   { href: '/checkout', labelKey: 'footer.plans' },
   { href: '/how-it-works', labelKey: 'footer.guide' },
@@ -30,8 +31,9 @@ export function SiteFooter({ className }: { className?: string } = {}) {
       <div className="mx-auto max-w-6xl">
         <div className="grid gap-10 sm:grid-cols-3">
           <div>
-            <Link href="/" className="font-display text-lg text-inherit">
-              {t('landing.brand')}
+            <Link href="/" className="inline-flex items-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt={t('landing.brand')} className="h-16 w-16" />
             </Link>
             <p className="inverse-muted mt-3 max-w-xs text-sm">{t('landing.footerBrandBody')}</p>
           </div>
@@ -63,10 +65,7 @@ export function SiteFooter({ className }: { className?: string } = {}) {
 
         <div className="mt-12 flex flex-col items-center gap-2 border-t border-[var(--color-inverse-border)] pt-6 text-center text-xs">
           <span className="inverse-muted">{t('footer.registeredOffice')}</span>
-          <div className="flex flex-col items-center gap-1 sm:flex-row sm:justify-between sm:gap-6">
-            <span className="inverse-muted">{t('landing.footerCopyright', { year: new Date().getFullYear() })}</span>
-            <span className="inverse-muted">{t('footer.madeWith')}</span>
-          </div>
+          <span className="inverse-muted">{t('landing.footerCopyright', { year: new Date().getFullYear() })}</span>
         </div>
       </div>
     </footer>

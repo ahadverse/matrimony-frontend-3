@@ -11,6 +11,7 @@ import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { useWallet } from '@/lib/queries';
 
 const navLinks = [
+  { href: '/', labelKey: 'nav.home' },
   { href: '/profiles', labelKey: 'nav.profiles' },
   { href: '/browse', labelKey: 'nav.discover' },
   { href: '/interests', labelKey: 'nav.interests' },
@@ -40,13 +41,14 @@ export function AuthTopNav() {
   return (
     <header ref={headerRef} className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[var(--color-bg)]/90 backdrop-blur-md">
       <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link href="/dashboard" className="font-display text-xl gradient-text">
-          {t('landing.brand')}
+        <Link href="/dashboard" className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt={t('landing.brand')} className="h-14 w-14" />
         </Link>
 
         <div className="hidden items-center gap-6 lg:flex">
           {navLinks.map((link) => {
-            const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
+            const active = link.href === '/' ? pathname === '/' : pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (
               <Link
                 key={link.href}

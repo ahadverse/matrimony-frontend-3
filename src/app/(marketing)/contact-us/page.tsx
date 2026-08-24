@@ -14,9 +14,9 @@ import { StaggerItem, StaggerList } from '@/components/motion/StaggerList';
 import { api, ApiError } from '@/lib/api-client';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 
-const CONTACT_PHONE = '+88 01601-415580';
-const CONTACT_EMAIL = 'shohozbibaho7@gmail.com';
-const CONTACT_ADDRESS = '63, Sajeda Haque Tower, Naha Road, Sadar, Mymensingh-2200, Bangladesh';
+const CONTACT_PHONE = '+880 1304 082381';
+const CONTACT_EMAIL = 'biyekoralagbe@gmail.com';
+const CONTACT_ADDRESS = 'Mujib Road (Community Hospital Bhabon, 4th floor), Sirajganj';
 
 const socials = [
   { icon: Facebook, href: 'https://facebook.com', label: 'Facebook' },

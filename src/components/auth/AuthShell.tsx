@@ -28,8 +28,9 @@ export function AuthShell({ children, wide }: { children: ReactNode; wide?: bool
         className="absolute -right-16 bottom-10 h-56 w-56 -rotate-12 text-[var(--color-primary-light)]/15 sm:h-72 sm:w-72"
         aria-hidden
       />
-      <Link href="/" className="relative z-10 mb-8 font-display text-2xl gradient-text">
-        BiyeKoraLagbe
+      <Link href="/" className="relative z-10 mb-8">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="BiyeKoraLagbe" className="h-24 w-24" />
       </Link>
       <div
         className={clsx(

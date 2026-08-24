@@ -4,13 +4,21 @@ import { use, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'reac
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { ArrowLeft, BadgeCheck, UserRound } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, ShieldOff, UserRound } from 'lucide-react';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
 import { ChatComposer } from '@/components/chat/ChatComposer';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { useChatSocket } from '@/lib/chat/ChatProvider';
-import { useConversations, useLiveActivity, useMessages, useSendImageMessage } from '@/lib/queries';
+import {
+  useBlockUser,
+  useConversations,
+  useLiveActivity,
+  useMessages,
+  useSendImageMessage,
+  useUnblockUser,
+} from '@/lib/queries';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { ApiError, resolveUploadUrl } from '@/lib/api-client';
 import type { ChatMessage } from '@/lib/types';
@@ -80,8 +88,11 @@ export default function ConversationThreadPage({ params }: { params: Promise<{ c
   const socket = useChatSocket();
   const [otherTyping, setOtherTyping] = useState(false);
   const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
+  const blockUser = useBlockUser();
+  const unblockUser = useUnblockUser();
 
   function scrollToBottom() {
     const el = scrollAreaRef.current;
@@ -160,17 +171,24 @@ export default function ConversationThreadPage({ params }: { params: Promise<{ c
       );
     }
 
+    function handleBlocked(payload: { conversationId: string }) {
+      if (payload.conversationId !== conversationId) return;
+      toast.error(t('chat.messageBlockedError'));
+    }
+
     activeSocket.emit('message:read', { conversationId });
     activeSocket.on('message:new', handleNewMessage);
     activeSocket.on('typing:update', handleTyping);
     activeSocket.on('message:read', handleRead);
+    activeSocket.on('message:blocked', handleBlocked);
 
     return () => {
       activeSocket.off('message:new', handleNewMessage);
       activeSocket.off('typing:update', handleTyping);
       activeSocket.off('message:read', handleRead);
+      activeSocket.off('message:blocked', handleBlocked);
     };
-  }, [socket, conversationId, conversation?.otherUser?.id, queryClient]);
+  }, [socket, conversationId, conversation?.otherUser?.id, queryClient, t]);
 
   // Reset to "stuck to bottom" whenever the conversation itself changes.
   useLayoutEffect(() => {
@@ -207,6 +225,26 @@ export default function ConversationThreadPage({ params }: { params: Promise<{ c
     });
   }
 
+  function handleBlock() {
+    if (!conversation?.otherUser) return;
+    blockUser.mutate(conversation.otherUser.id, {
+      onSuccess: () => {
+        toast.success(t('chat.blockSuccess'));
+        setShowBlockConfirm(false);
+      },
+      onError: () => toast.error(t('chat.blockError')),
+    });
+  }
+
+  function handleUnblock() {
+    if (!conversation?.otherUser) return;
+    unblockUser.mutate(conversation.otherUser.id, {
+      onSuccess: () => toast.success(t('chat.unblockSuccess')),
+      onError: () => toast.error(t('chat.unblockError')),
+    });
+  }
+
+  const isBlocked = !!conversation && (conversation.blockedByMe || conversation.blockedByOther);
   const resolvedPhoto = resolveUploadUrl(conversation?.otherUser?.photoUrl ?? null);
 
   return (
@@ -250,7 +288,32 @@ export default function ConversationThreadPage({ params }: { params: Promise<{ c
             <UserRound size={18} />
           </Link>
         )}
+        {conversation?.otherUser && (
+          <button
+            type="button"
+            onClick={() => (conversation.blockedByMe ? handleUnblock() : setShowBlockConfirm(true))}
+            disabled={blockUser.isPending || unblockUser.isPending}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-danger)] disabled:opacity-50"
+            aria-label={conversation.blockedByMe ? t('chat.unblockUser') : t('chat.blockUser')}
+          >
+            <ShieldOff size={18} />
+          </button>
+        )}
       </header>
+
+      {conversation?.blockedByMe && (
+        <div className="border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-center text-xs text-[var(--color-text-muted)]">
+          {t('chat.blockedByMeBanner', { name: conversation.otherUser?.name ?? '' })}{' '}
+          <button type="button" onClick={handleUnblock} className="font-medium text-[var(--color-primary-accent)] hover:underline">
+            {t('chat.unblockUser')}
+          </button>
+        </div>
+      )}
+      {!conversation?.blockedByMe && conversation?.blockedByOther && (
+        <div className="border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-center text-xs text-[var(--color-text-muted)]">
+          {t('chat.blockedByOtherBanner')}
+        </div>
+      )}
 
       <div ref={scrollAreaRef} onScroll={handleScrollAreaScroll} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {hasNextPage && (
@@ -300,13 +363,34 @@ export default function ConversationThreadPage({ params }: { params: Promise<{ c
         )}
       </div>
 
-      <ChatComposer
-        onSendText={sendText}
-        onSendImage={handleSendImage}
-        onTypingStart={() => socket?.emit('typing:start', { conversationId })}
-        onTypingStop={() => socket?.emit('typing:stop', { conversationId })}
-        isSendingImage={sendImage.isPending}
-      />
+      {!isBlocked && (
+        <ChatComposer
+          onSendText={sendText}
+          onSendImage={handleSendImage}
+          onTypingStart={() => socket?.emit('typing:start', { conversationId })}
+          onTypingStop={() => socket?.emit('typing:stop', { conversationId })}
+          isSendingImage={sendImage.isPending}
+        />
+      )}
+
+      <Modal
+        open={showBlockConfirm}
+        onClose={() => setShowBlockConfirm(false)}
+        title={t('chat.blockConfirmTitle', { name: conversation?.otherUser?.name ?? '' })}
+        size="sm"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-[var(--color-text-muted)]">{t('chat.blockConfirmBody')}</p>
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setShowBlockConfirm(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="danger" className="flex-1" onClick={handleBlock} loading={blockUser.isPending}>
+              {t('chat.blockUser')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

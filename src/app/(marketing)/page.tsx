@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import clsx from 'clsx';
 import {
   CheckCircle2,
@@ -79,6 +80,42 @@ const safetyPoints = [
   'landing.safetyPoint4',
 ] as const;
 
+// Demo photography — swap these /demo/*.webp files for licensed/uploaded
+// photos once real member/couple photography is available.
+function DemoPhoto({
+  src,
+  alt,
+  className,
+  sizes = '320px',
+  priority = false,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  sizes?: string;
+  priority?: boolean;
+}) {
+  // className may bring its own position utility (e.g. the hero panels use
+  // "absolute inset-y-0 …") — only fall back to "relative" when it doesn't,
+  // since Tailwind has no way to let a later class override an earlier
+  // same-specificity one and both position utilities would otherwise apply.
+  const hasPosition = className && /\b(?:absolute|fixed|sticky)\b/.test(className);
+  return (
+    <div className={clsx(!hasPosition && 'relative', 'overflow-hidden', className)} aria-hidden={alt === ''}>
+      <Image src={src} alt={alt} fill sizes={sizes} priority={priority} className="object-cover" />
+    </div>
+  );
+}
+
+const couplePhotos = [
+  { src: '/demo/couple-1.webp', rotation: '-rotate-3' },
+  { src: '/demo/couple-2.webp', rotation: 'rotate-2' },
+  { src: '/demo/couple-3.webp', rotation: '-rotate-2' },
+  { src: '/demo/couple-4.webp', rotation: 'rotate-3' },
+] as const;
+
+const storyAvatars = ['/demo/avatar-1.webp', '/demo/avatar-2.webp', '/demo/avatar-3.webp'] as const;
+
 const faqs = [
   { qKey: 'landing.faq1Q', aKey: 'landing.faq1A' },
   { qKey: 'landing.faq2Q', aKey: 'landing.faq2A' },
@@ -96,6 +133,24 @@ export default function LandingPage() {
       {/* Hero — text-only, centered. maroon/pink gradient panel since it's a
           fixed brand moment, not UI chrome. */}
       <section className="gradient-primary relative overflow-hidden">
+        {/* Two full-height photo panels, left and right, are the hero's
+            background — a brand gradient wash sits on top so text stays
+            legible and the maroon/pink identity still reads. */}
+        <DemoPhoto
+          src="/demo/hero-panel-left.webp"
+          alt=""
+          sizes="50vw"
+          priority
+          className="absolute inset-y-0 left-0 w-1/2"
+        />
+        <DemoPhoto
+          src="/demo/hero-panel-right.webp"
+          alt=""
+          sizes="50vw"
+          priority
+          className="absolute inset-y-0 right-0 w-1/2"
+        />
+        <div className="gradient-primary absolute inset-0 opacity-55" aria-hidden />
         <Heart
           strokeWidth={1.25}
           className="absolute -left-12 -top-10 h-40 w-40 text-[var(--color-on-primary)]/15 sm:h-56 sm:w-56 lg:h-72 lg:w-72"
@@ -120,6 +175,14 @@ export default function LandingPage() {
 
       {/* Quick-join teaser — sample block 2 */}
       <section className="relative overflow-hidden border-b border-[var(--color-border)] px-6 py-14">
+        <Image
+          src="/demo/quickjoin-bg.webp"
+          alt=""
+          fill
+          sizes="100vw"
+          className="object-cover opacity-[0.06] dark:opacity-[0.1]"
+          aria-hidden
+        />
         <Heart
           strokeWidth={1.25}
           className="absolute -right-10 -top-10 h-32 w-32 rotate-12 text-[var(--color-primary)]/10"
@@ -185,8 +248,55 @@ export default function LandingPage() {
         </div>
       </FadeIn>
 
+      {/* Real couples — photo collage. Placeholder tiles until we have a
+          licensed/uploaded photo set; same aspect boxes so real photos drop
+          in without a layout change. */}
+      <section className="px-6 py-20">
+        <div className="mx-auto max-w-5xl">
+          <FadeIn className="flex flex-col items-center text-center">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-primary-accent)]">
+              {t('landing.couplesEyebrow')}
+            </span>
+            <h2 className="font-display mt-3 text-2xl text-[var(--color-text)] sm:text-3xl">
+              {t('landing.couplesTitle')} <span className="text-[var(--color-primary-accent)]">{t('landing.couplesHighlight')}</span>
+            </h2>
+            <p className="mt-3 max-w-xl text-[var(--color-text-muted)]">{t('landing.couplesSubtitle')}</p>
+          </FadeIn>
+
+          <StaggerList className="mt-12 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+            {couplePhotos.map(({ src, rotation }, i) => (
+              <StaggerItem key={i}>
+                <DemoPhoto
+                  src={src}
+                  alt=""
+                  sizes="(min-width: 1024px) 25vw, 50vw"
+                  className={clsx(
+                    'aspect-[3/4] w-full rounded-3xl shadow-md ring-1 ring-inset ring-[var(--color-border)] transition-transform hover:rotate-0',
+                    rotation,
+                  )}
+                />
+              </StaggerItem>
+            ))}
+          </StaggerList>
+
+          <FadeIn className="mt-10 flex justify-center">
+            <Link href="/success-stories" className="text-sm font-medium text-[var(--color-primary-accent)] hover:underline">
+              {t('landing.couplesCta')} →
+            </Link>
+          </FadeIn>
+        </div>
+      </section>
+
       {/* Personas — sample block 3 */}
       <section className="relative overflow-hidden px-6 py-20">
+        <Image
+          src="/demo/personas-bg.webp"
+          alt=""
+          fill
+          sizes="100vw"
+          className="object-cover opacity-[0.06] dark:opacity-[0.1]"
+          aria-hidden
+        />
         <Heart
           strokeWidth={1.25}
           className="absolute -left-14 bottom-0 h-44 w-44 -rotate-12 text-[var(--color-primary)]/10"
@@ -368,14 +478,22 @@ export default function LandingPage() {
           </FadeIn>
 
           <StaggerList className="mt-12 grid gap-6 sm:grid-cols-3">
-            {stories.map((story) => (
+            {stories.map((story, i) => (
               <StaggerItem key={story.nameKey}>
                 <Card className="h-full p-6">
                   <Quote size={22} className="text-[var(--color-primary-light)]" />
                   <p className="inverse-muted mt-4 text-sm leading-relaxed italic">&ldquo;{t(story.quoteKey)}&rdquo;</p>
-                  <div className="mt-5 border-t border-[var(--color-inverse-border)] pt-4">
-                    <div className="font-display text-sm">{t(story.nameKey)}</div>
-                    <div className="inverse-muted text-xs">{t(story.metaKey)}</div>
+                  <div className="mt-5 flex items-center gap-3 border-t border-[var(--color-inverse-border)] pt-4">
+                    <DemoPhoto
+                      src={storyAvatars[i]}
+                      alt=""
+                      sizes="44px"
+                      className="h-11 w-11 shrink-0 rounded-full ring-1 ring-inset ring-[var(--color-inverse-border)]"
+                    />
+                    <div>
+                      <div className="font-display text-sm">{t(story.nameKey)}</div>
+                      <div className="inverse-muted text-xs">{t(story.metaKey)}</div>
+                    </div>
                   </div>
                 </Card>
               </StaggerItem>
@@ -478,6 +596,14 @@ export default function LandingPage() {
 
       {/* Final CTA band — stays maroon/pink regardless of theme, matches sample */}
       <section className="gradient-primary relative overflow-hidden px-6 py-20 text-center text-[var(--color-on-primary)]">
+        <Image
+          src="/demo/cta-bg.webp"
+          alt=""
+          fill
+          sizes="100vw"
+          className="object-cover opacity-20 mix-blend-overlay"
+          aria-hidden
+        />
         <Heart
           strokeWidth={1.25}
           className="absolute -left-10 -bottom-12 h-36 w-36 -rotate-12 text-[var(--color-on-primary)]/15 sm:h-52 sm:w-52 lg:h-64 lg:w-64"

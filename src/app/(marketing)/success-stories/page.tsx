@@ -31,7 +31,7 @@ const stories = [
     photo: 'https://loremflickr.com/1200/700/couple?lock=202',
     tags: ['Islam', 'Sylhet & Dhaka', 'March 2026'],
     metOnMarriedLater: 'Met on BiyeKoraLagbe — married 4 months later',
-    quoteBn: '"পরিবার সবসময় পাশে ছিল - প্রতিটি ধাপে। এটাই বিয়েকরিকে অন্যদের থেকে আলাদা করে তুলেছে।"',
+    quoteBn: '"পরিবার সবসময় পাশে ছিল - প্রতিটি ধাপে। এটাই বিয়ে করা লাগবেকে অন্যদের থেকে আলাদা করে তুলেছে।"',
     quoteEn: "\"Our families were with us at every step. That's what made BiyeKoraLagbe different from everything else.\"",
     body: "Sumaiya's elder brother was managing her profile. She had asked him to — she felt safer that way. She shortlisted seven profiles after two weeks. Raihan was the first one the family agreed to contact.",
     journey: [
@@ -46,7 +46,7 @@ const stories = [
     photo: 'https://loremflickr.com/1200/700/couple?lock=303',
     tags: ['Islam', 'London & Dhaka', 'April 2026'],
     metOnMarriedLater: 'Met on BiyeKoraLagbe — married 3 months later',
-    quoteBn: '"প্রবাসে থেকে দেশের কাউকে বিয়ে করা কঠিন মনে হতো - বিয়েকরি সেই দূরত্ব ঘুচিয়ে দিয়েছে।"',
+    quoteBn: '"প্রবাসে থেকে দেশের কাউকে বিয়ে করা কঠিন মনে হতো - বিয়ে করা লাগবে সেই দূরত্ব ঘুচিয়ে দিয়েছে।"',
     quoteEn: 'Finding someone from home while living in London felt different from anywhere else.',
     body: "Imran had been looking to marry someone from Bangladesh — someone who shared his roots, his religion, his idea of family. Every platform he tried felt either too casual or too India-focused. A friend from Sylhet sent him a BiyeKoraLagbe link.",
     journey: [

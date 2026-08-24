@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Copy, Globe, MapPin } from 'lucide-react';
+import { Globe, MapPin } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -20,44 +20,22 @@ type Region = 'bd' | 'intl';
 export default function CheckoutPage() {
   const { t } = useLanguage();
   const { data: wallet } = useWallet();
-  const queryClient = useQueryClient();
   const minAmount = wallet?.minTopupAmount ?? 500;
 
   const [region, setRegion] = useState<Region>('bd');
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [amountInput, setAmountInput] = useState<string>(String(minAmount));
-  const [trxId, setTrxId] = useState('');
-  const [payerAccountNumber, setPayerAccountNumber] = useState('');
-  const [copied, setCopied] = useState(false);
 
-  const submitManualBkash = useMutation({
-    mutationFn: () =>
-      api.post('wallet/topup/bkash/manual', {
-        amount: effectiveAmount,
-        trxId,
-        payerAccountNumber,
-      }),
-    onSuccess: () => {
-      toast.success(t('checkout.manualBkash.submitted'));
-      setTrxId('');
-      setPayerAccountNumber('');
-      queryClient.invalidateQueries({ queryKey: ['wallet'] });
-      queryClient.invalidateQueries({ queryKey: ['wallet-transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['wallet-transactions-infinite'] });
+  const initBkash = useMutation({
+    mutationFn: () => api.post<{ redirectUrl: string }>('wallet/topup/bkash/init', { amount: effectiveAmount }),
+    onSuccess: (data) => {
+      window.location.href = data.redirectUrl;
     },
-    onError: (e) => toast.error(e instanceof ApiError ? String(e.message) : 'Could not submit transaction'),
+    onError: (e) => toast.error(e instanceof ApiError ? String(e.message) : 'Could not start bKash checkout'),
   });
 
   const effectiveAmount = Number(amountInput) || 0;
   const isValid = effectiveAmount >= minAmount;
-  const isManualValid = isValid && trxId.trim().length >= 8 && payerAccountNumber.trim().length >= 8;
-
-  const copyMerchantNumber = () => {
-    if (!wallet?.bkashMerchantNumber) return;
-    void navigator.clipboard.writeText(wallet.bkashMerchantNumber);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-5">
@@ -144,51 +122,14 @@ export default function CheckoutPage() {
             </p>
           </div>
 
-          <Card className="flex flex-col gap-3 p-4">
-            <p className="text-sm font-semibold text-[var(--color-text)]">{t('checkout.manualBkash.sectionTitle')}</p>
-            <p className="text-xs text-[var(--color-text-muted)]">
-              {t('checkout.manualBkash.instructions', { amount: `${t('common.taka')}${effectiveAmount}` })}
-            </p>
-
-            <div className="flex items-center justify-between gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
-              <div>
-                <p className="text-xs text-[var(--color-text-faint)]">{t('checkout.manualBkash.merchantNumberLabel')}</p>
-                <p className="font-display text-lg text-[var(--color-text)]">{wallet?.bkashMerchantNumber ?? '—'}</p>
-              </div>
-              <button
-                type="button"
-                onClick={copyMerchantNumber}
-                className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
-              >
-                <Copy size={14} />
-                {copied ? t('checkout.manualBkash.copied') : t('checkout.manualBkash.copy')}
-              </button>
-            </div>
-
-            <Input
-              label={t('checkout.manualBkash.trxIdLabel')}
-              placeholder={t('checkout.manualBkash.trxIdPlaceholder')}
-              value={trxId}
-              onChange={(e) => setTrxId(e.target.value)}
-            />
-            <Input
-              label={t('checkout.manualBkash.payerNumberLabel')}
-              placeholder={t('checkout.manualBkash.payerNumberPlaceholder')}
-              value={payerAccountNumber}
-              onChange={(e) => setPayerAccountNumber(e.target.value)}
-            />
-
-            <Button
-              variant="secondary"
-              className="w-full"
-              disabled={!isManualValid}
-              loading={submitManualBkash.isPending}
-              onClick={() => submitManualBkash.mutate()}
-            >
-              {t('checkout.manualBkash.submit')}
-            </Button>
-            <p className="text-center text-xs text-[var(--color-text-faint)]">{t('checkout.manualBkash.pendingNote')}</p>
-          </Card>
+          <Button
+            className="w-full"
+            disabled={!isValid}
+            loading={initBkash.isPending}
+            onClick={() => initBkash.mutate()}
+          >
+            {t('checkout.payWithBkash')}
+          </Button>
         </>
       ) : (
         <>

@@ -277,6 +277,8 @@ export interface Conversation {
   lastMessage: { preview: string | null; senderId: string; createdAt: string } | null;
   lastMessageAt: string | null;
   unreadCount: number;
+  blockedByMe: boolean;
+  blockedByOther: boolean;
 }
 
 export type MessageType = 'text' | 'image';
