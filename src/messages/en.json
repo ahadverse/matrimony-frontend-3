@@ -465,23 +465,41 @@
     "ctaButton": "Create your free profile"
   },
   "auth": {
+    "socialLogin": {
+      "google": "Continue with Google",
+      "facebook": "Continue with Facebook",
+      "or": "or"
+    },
+    "callback": {
+      "signingIn": "Signing you in...",
+      "error": "Something went wrong signing you in. Please try again."
+    },
     "login": {
       "title": "Welcome back",
       "subtitle": "Log in to continue your search",
-      "phone": "Phone number",
+      "identifier": "Email or phone number",
+      "identifierPlaceholder": "you@example.com or +8801XXXXXXXXX",
       "password": "Password",
       "submit": "Log in",
       "noAccount": "New to BiyeKoraLagbe?",
       "registerLink": "Create an account",
-      "error": "Incorrect phone number or password"
+      "error": "Incorrect email/phone or password"
     },
     "register": {
       "title": "Create your account",
-      "stepPhone": "Your phone number",
-      "stepPhoneBody": "We'll text you a 6-digit verification code.",
+      "stepChooseTitle": "Join BiyeKoraLagbe",
+      "stepChooseBody": "Choose how you'd like to create your account.",
+      "createWithCredentials": "Create account with email & password",
+      "stepPhoneTitle": "Verify your phone number",
+      "stepPhoneBody": "Last step! We'll verify a phone number for your account.",
+      "phoneBangladesh": "Bangladesh",
+      "phoneOtherCountry": "Other country",
+      "phoneChannelSms": "We'll text you a 6-digit verification code.",
+      "phoneChannelEmail": "SMS isn't available in your country yet, so we'll email the code to {email} instead.",
       "sendOtp": "Send code",
       "stepOtpTitle": "Enter the code",
-      "stepOtpBody": "We sent a 6-digit code to {phone}",
+      "stepOtpBodySms": "We sent a 6-digit code to {phone}",
+      "stepOtpBodyEmail": "We sent a 6-digit code to {email}",
       "resendOtp": "Resend code",
       "verifyOtp": "Verify",
       "stepDetailsTitle": "Tell us about yourself",
@@ -523,7 +541,7 @@
       "stepPhotosTitle": "Add your photos",
       "stepPhotosBody": "Add at least one clear photo of yourself.",
       "addPhoto": "Add photo",
-      "finish": "Finish & submit for review",
+      "finish": "Continue",
       "pendingTitle": "You're all set!",
       "pendingBody": "Your profile is now pending admin review. We'll notify you once it's approved and visible to others.",
       "goToApp": "Continue to app",
@@ -531,7 +549,6 @@
       "stepAccountBody": "Trusted by Bangladeshis all over the world",
       "email": "Your email",
       "emailPlaceholder": "Enter your email",
-      "mobileNumber": "Mobile number",
       "createPassword": "Create password",
       "termsNotice": "By clicking Continue, you confirm that you accept the {terms} and {privacy}",
       "alreadyMember": "Already a member?",

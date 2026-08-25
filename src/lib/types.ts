@@ -22,7 +22,8 @@ export interface MyVerification {
 
 export interface CurrentUser {
   id: string;
-  phone: string;
+  /** Null until the wizard's last step (or ever, for someone who skips it) verifies a phone. */
+  phone: string | null;
   email: string | null;
   gender: Gender;
   dob: string | null;
@@ -37,6 +38,11 @@ export interface CurrentUser {
 export interface AuthResponse {
   accessToken: string;
   user: Pick<CurrentUser, 'id' | 'phone' | 'email' | 'gender' | 'role' | 'status' | 'walletBalance'>;
+}
+
+/** Shape returned by /auth/oauth/exchange — an AuthResponse plus whether the account was just created. */
+export interface OAuthExchangeResponse extends AuthResponse {
+  isNewUser: boolean;
 }
 
 export interface District {
@@ -207,7 +213,7 @@ export interface UnlockedProfile extends Omit<LockedProfile, 'locked'>, Location
   name: string;
   relativeName: string | null;
   relativePhone: string | null;
-  phone: string;
+  phone: string | null;
   email: string | null;
   presentAddress: string | null;
   permanentAddress: string | null;

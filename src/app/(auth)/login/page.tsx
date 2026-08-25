@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { AuthShell } from '@/components/auth/AuthShell';
+import { SocialLoginButtons } from '@/components/auth/SocialLoginButtons';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { api, ApiError } from '@/lib/api-client';
@@ -27,11 +28,11 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
-  const [phone, setPhone] = useState('+8801');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
 
   const loginMutation = useMutation({
-    mutationFn: () => api.post<AuthResponse>('auth/login', { phone, password }),
+    mutationFn: () => api.post<AuthResponse>('auth/login', { identifier, password }),
     onSuccess: async (data) => {
       setToken(data.accessToken);
       await queryClient.invalidateQueries({ queryKey: ['me'] });
@@ -47,19 +48,29 @@ function LoginForm() {
       <h1 className="font-display text-2xl text-[var(--color-text)]">{t('auth.login.title')}</h1>
       <p className="mt-1 text-sm text-[var(--color-text-muted)]">{t('auth.login.subtitle')}</p>
 
+      <div className="mt-6">
+        <SocialLoginButtons />
+      </div>
+
+      <div className="my-5 flex items-center gap-3">
+        <span className="h-px flex-1 bg-[var(--color-border)]" />
+        <span className="text-xs text-[var(--color-text-faint)]">{t('auth.socialLogin.or')}</span>
+        <span className="h-px flex-1 bg-[var(--color-border)]" />
+      </div>
+
       <form
-        className="mt-6 flex flex-col gap-4"
+        className="flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           loginMutation.mutate();
         }}
       >
         <Input
-          label={t('auth.login.phone')}
-          type="tel"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="+8801XXXXXXXXX"
+          label={t('auth.login.identifier')}
+          type="text"
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
+          placeholder={t('auth.login.identifierPlaceholder')}
           required
         />
         <Input

@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,6 +18,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { AuthShell } from '@/components/auth/AuthShell';
+import { SocialLoginButtons } from '@/components/auth/SocialLoginButtons';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
@@ -51,8 +52,11 @@ import {
 import type { AuthResponse, Gender, ProfileCreatedBy } from '@/lib/types';
 
 /**
- * Registration follows the bdmarriage flow: verify a phone, create the account,
- * then walk through the bio-data one themed screen at a time.
+ * Registration starts from Google/Facebook or an email+password account, then
+ * walks through the bio-data one themed screen at a time, and only asks for
+ * (and verifies) a phone number on the very last step — most countries have
+ * no SMS gateway wired up here, so that step emails the code instead of
+ * texting it whenever the phone isn't a Bangladeshi number.
  *
  * Each wizard step saves its own slice via `PUT profiles/me`, which is a
  * partial upsert — so someone who drops out at "Life Style" still leaves a
@@ -60,8 +64,7 @@ import type { AuthResponse, Gender, ProfileCreatedBy } from '@/lib/types';
  */
 
 type Step =
-  | 'phone'
-  | 'otp'
+  | 'choose'
   | 'account'
   | 'basic'
   | 'education'
@@ -71,6 +74,8 @@ type Step =
   | 'about'
   | 'location'
   | 'photos'
+  | 'phone'
+  | 'otp'
   | 'done';
 
 const REGISTER_PROGRESS_KEY = 'biyekoralagbe_register_progress';
@@ -172,19 +177,34 @@ const emptyForm = (): WizardForm => ({
 interface StoredProgress {
   step: Step;
   phone: string;
-  verificationToken: string;
   form: WizardForm;
 }
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterWizard />
+    </Suspense>
+  );
+}
+
+function RegisterWizard() {
   const { t, locale } = useLanguage();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
-  const [step, setStep] = useState<Step>('phone');
+  // A Google/Facebook sign-up that just created an account lands here via
+  // /register?step=basic instead of the 'choose' step — read via a lazy
+  // initializer (not an effect) since useSearchParams() is safe at render time.
+  const [step, setStep] = useState<Step>(() => {
+    const requestedStep = searchParams.get('step') as Step | null;
+    return requestedStep && WIZARD_STEPS.includes(requestedStep as WizardStep) ? requestedStep : 'choose';
+  });
   const [phone, setPhone] = useState('+8801');
-  const [verificationToken, setVerificationToken] = useState('');
+  const [phoneIsBangladeshi, setPhoneIsBangladeshi] = useState(true);
   const [otp, setOtp] = useState('');
+  const [otpChannel, setOtpChannel] = useState<'sms' | 'email'>('sms');
   const [form, setForm] = useState<WizardForm>(emptyForm);
 
   const [photos, setPhotos] = useState<File[]>([]);
@@ -213,14 +233,12 @@ export default function RegisterPage() {
       if (!saved.step || saved.step === 'done') return;
       setStep(saved.step);
       setPhone(saved.phone ?? '+8801');
-      setVerificationToken(saved.verificationToken ?? '');
       // Spread over a fresh form so a stored payload written by an earlier
       // version of this wizard can't leave a new field undefined.
       setForm({ ...emptyForm(), ...(saved.form ?? {}) });
     } catch {
       sessionStorage.removeItem(REGISTER_PROGRESS_KEY);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -228,33 +246,15 @@ export default function RegisterPage() {
       sessionStorage.removeItem(REGISTER_PROGRESS_KEY);
       return;
     }
-    const progress: StoredProgress = { step, phone, verificationToken, form };
+    const progress: StoredProgress = { step, phone, form };
     sessionStorage.setItem(REGISTER_PROGRESS_KEY, JSON.stringify(progress));
-  }, [step, phone, verificationToken, form]);
-
-  const sendOtp = useMutation({
-    mutationFn: () => api.post('auth/otp/send', { phone, purpose: 'register' }),
-    onSuccess: () => setStep('otp'),
-    onError: (e) => toast.error(e instanceof ApiError ? String(e.message) : 'Failed to send code'),
-  });
-
-  const verifyOtp = useMutation({
-    mutationFn: () =>
-      api.post<{ verificationToken: string }>('auth/otp/verify', { phone, code: otp, purpose: 'register' }),
-    onSuccess: (data) => {
-      setVerificationToken(data.verificationToken);
-      setStep('account');
-    },
-    onError: (e) => toast.error(e instanceof ApiError ? String(e.message) : 'Invalid code'),
-  });
+  }, [step, phone, form]);
 
   const createAccount = useMutation({
     mutationFn: () =>
       api.post<AuthResponse>('auth/register', {
-        phone,
-        email: form.email || undefined,
+        email: form.email,
         password: form.password,
-        verificationToken,
       }),
     onSuccess: async (data) => {
       setToken(data.accessToken);
@@ -262,6 +262,28 @@ export default function RegisterPage() {
       setStep('basic');
     },
     onError: (e) => toast.error(e instanceof ApiError ? String(e.message) : 'Could not create account'),
+  });
+
+  // Wizard's last step: verify the phone the member just typed in. Bangladeshi
+  // numbers get a real SMS; everywhere else the same code goes to the account
+  // email instead, since only Bangladesh has an SMS gateway wired up.
+  const sendOtp = useMutation({
+    mutationFn: () =>
+      api.post<{ channel: 'sms' | 'email' }>('auth/otp/send', { phone, purpose: 'register' }),
+    onSuccess: (data) => {
+      setOtpChannel(data.channel);
+      setStep('otp');
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? String(e.message) : 'Failed to send code'),
+  });
+
+  const verifyOtp = useMutation({
+    mutationFn: () => api.post('auth/otp/verify', { phone, code: otp, purpose: 'register' }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['me'] });
+      setStep('done');
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? String(e.message) : 'Invalid code'),
   });
 
   /**
@@ -325,7 +347,7 @@ export default function RegisterPage() {
       await uploadPhoto.mutateAsync(file);
       setUploadedCount((c) => c + 1);
     }
-    setStep('done');
+    setStep('phone');
   }
 
   const isWizardStep = WIZARD_STEPS.includes(step as WizardStep);
@@ -340,45 +362,31 @@ export default function RegisterPage() {
           exit={{ opacity: 0, x: -16 }}
           transition={{ duration: 0.25 }}
         >
-          {step === 'phone' && (
-            <div className="flex flex-col gap-4">
-              <h1 className="font-display text-2xl text-[var(--color-text)]">{t('auth.register.stepPhone')}</h1>
-              <p className="text-sm text-[var(--color-text-muted)]">{t('auth.register.stepPhoneBody')}</p>
-              <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+8801XXXXXXXXX" />
-              <Button onClick={() => sendOtp.mutate()} loading={sendOtp.isPending}>
-                {t('auth.register.sendOtp')}
+          {step === 'choose' && (
+            <div className="flex flex-col gap-5">
+              <div className="text-center">
+                <h1 className="font-display text-2xl text-[var(--color-text)]">{t('auth.register.stepChooseTitle')}</h1>
+                <p className="mt-1 text-sm text-[var(--color-text-muted)]">{t('auth.register.stepChooseBody')}</p>
+              </div>
+
+              <SocialLoginButtons />
+
+              <div className="flex items-center gap-3">
+                <span className="h-px flex-1 bg-[var(--color-border)]" />
+                <span className="text-xs text-[var(--color-text-faint)]">{t('auth.socialLogin.or')}</span>
+                <span className="h-px flex-1 bg-[var(--color-border)]" />
+              </div>
+
+              <Button variant="secondary" onClick={() => setStep('account')}>
+                {t('auth.register.createWithCredentials')}
               </Button>
+
               <p className="text-center text-xs text-[var(--color-text-muted)]">
                 {t('auth.register.alreadyMember')}{' '}
                 <Link href="/login" className="text-[var(--color-primary-accent)] hover:underline">
                   {t('auth.register.loginNow')}
                 </Link>
               </p>
-            </div>
-          )}
-
-          {step === 'otp' && (
-            <div className="flex flex-col gap-4">
-              <h1 className="font-display text-2xl text-[var(--color-text)]">{t('auth.register.stepOtpTitle')}</h1>
-              <p className="text-sm text-[var(--color-text-muted)]">{t('auth.register.stepOtpBody', { phone })}</p>
-              <Input
-                inputMode="numeric"
-                maxLength={6}
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                placeholder="123456"
-                className="text-center text-2xl tracking-[0.5em]"
-              />
-              <Button onClick={() => verifyOtp.mutate()} loading={verifyOtp.isPending}>
-                {t('auth.register.verifyOtp')}
-              </Button>
-              <button
-                type="button"
-                onClick={() => sendOtp.mutate()}
-                className="text-xs text-[var(--color-text-muted)] underline"
-              >
-                {t('auth.register.resendOtp')}
-              </button>
             </div>
           )}
 
@@ -396,7 +404,6 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <Input label={t('auth.register.mobileNumber')} value={phone} readOnly disabled />
               <Input
                 label={t('auth.register.email')}
                 type="email"
@@ -1081,6 +1088,89 @@ export default function RegisterPage() {
               <Button onClick={submitPhotos} loading={uploadPhoto.isPending} disabled={photos.length === 0}>
                 {t('auth.register.finish')}
               </Button>
+            </div>
+          )}
+
+          {step === 'phone' && (
+            <div className="flex flex-col gap-4">
+              <h1 className="font-display text-2xl text-[var(--color-text)]">{t('auth.register.stepPhoneTitle')}</h1>
+              <p className="text-sm text-[var(--color-text-muted)]">{t('auth.register.stepPhoneBody')}</p>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhoneIsBangladeshi(true);
+                    setPhone('+8801');
+                  }}
+                  className={`h-11 rounded-xl border text-sm font-medium transition-colors ${
+                    phoneIsBangladeshi
+                      ? 'gradient-primary border-transparent text-[var(--color-on-primary)]'
+                      : 'border-[var(--color-border)] text-[var(--color-text-muted)]'
+                  }`}
+                >
+                  {t('auth.register.phoneBangladesh')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhoneIsBangladeshi(false);
+                    setPhone('+');
+                  }}
+                  className={`h-11 rounded-xl border text-sm font-medium transition-colors ${
+                    !phoneIsBangladeshi
+                      ? 'gradient-primary border-transparent text-[var(--color-on-primary)]'
+                      : 'border-[var(--color-border)] text-[var(--color-text-muted)]'
+                  }`}
+                >
+                  {t('auth.register.phoneOtherCountry')}
+                </button>
+              </div>
+
+              <Input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder={phoneIsBangladeshi ? '+8801XXXXXXXXX' : '+1XXXXXXXXXX'}
+              />
+              <p className="text-xs text-[var(--color-text-faint)]">
+                {phoneIsBangladeshi
+                  ? t('auth.register.phoneChannelSms')
+                  : t('auth.register.phoneChannelEmail', { email: form.email })}
+              </p>
+
+              <Button onClick={() => sendOtp.mutate()} loading={sendOtp.isPending}>
+                {t('auth.register.sendOtp')}
+              </Button>
+            </div>
+          )}
+
+          {step === 'otp' && (
+            <div className="flex flex-col gap-4">
+              <h1 className="font-display text-2xl text-[var(--color-text)]">{t('auth.register.stepOtpTitle')}</h1>
+              <p className="text-sm text-[var(--color-text-muted)]">
+                {otpChannel === 'sms'
+                  ? t('auth.register.stepOtpBodySms', { phone })
+                  : t('auth.register.stepOtpBodyEmail', { email: form.email })}
+              </p>
+              <Input
+                inputMode="numeric"
+                maxLength={6}
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                placeholder="123456"
+                className="text-center text-2xl tracking-[0.5em]"
+              />
+              <Button onClick={() => verifyOtp.mutate()} loading={verifyOtp.isPending}>
+                {t('auth.register.verifyOtp')}
+              </Button>
+              <button
+                type="button"
+                onClick={() => sendOtp.mutate()}
+                className="text-xs text-[var(--color-text-muted)] underline"
+              >
+                {t('auth.register.resendOtp')}
+              </button>
             </div>
           )}
 
