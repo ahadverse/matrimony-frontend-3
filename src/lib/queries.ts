@@ -129,10 +129,9 @@ export interface PublicProfileFilters {
   ageMax?: number;
   heightMinCm?: number;
   heightMaxCm?: number;
-  /** Home division — the reference sidebar's top-level location filter. */
-  division?: string;
-  district?: string;
   country?: string;
+  state?: string;
+  city?: string;
   education?: string;
   profession?: string;
   workingSector?: string;

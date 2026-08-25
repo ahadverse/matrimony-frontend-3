@@ -40,9 +40,9 @@ export interface AuthResponse {
   user: Pick<CurrentUser, 'id' | 'phone' | 'email' | 'gender' | 'role' | 'status' | 'walletBalance'>;
 }
 
-/** Shape returned by /auth/oauth/exchange — an AuthResponse plus whether the account was just created. */
+/** Shape returned by /auth/oauth/exchange — an AuthResponse plus whether the bio-data wizard still needs to run. */
 export interface OAuthExchangeResponse extends AuthResponse {
-  isNewUser: boolean;
+  needsOnboarding: boolean;
 }
 
 export interface District {

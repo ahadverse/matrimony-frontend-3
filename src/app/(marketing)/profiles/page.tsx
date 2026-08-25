@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { RangeSlider } from '@/components/ui/RangeSlider';
 import { Select } from '@/components/ui/Select';
+import { LocationPicker } from '@/components/ui/LocationPicker';
 import { FadeIn } from '@/components/motion/FadeIn';
 import { PublicProfileRow } from '@/components/profile/PublicProfileRow';
 import { usePublicProfiles, useUnlockProfile, useWallet, type PublicProfileFilters } from '@/lib/queries';
@@ -17,8 +18,8 @@ import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { ApiError } from '@/lib/api-client';
 import { useIsSignedIn } from '@/lib/auth-token';
 import { cmToFeetInches, feetInchesToCm } from '@/lib/height';
+import { EMPTY_LOCATION, type ProfileLocation } from '@/lib/geo';
 import {
-  BD_DIVISIONS,
   MARITAL_STATUSES,
   PROFESSIONAL_AREAS,
   QUALIFICATIONS,
@@ -33,9 +34,9 @@ const MAX_HEIGHT_CM = feetInchesToCm(6, 6);
 
 const STRING_FILTER_KEYS = [
   'gender',
-  'division',
-  'district',
   'country',
+  'state',
+  'city',
   'education',
   'profession',
   'workingSector',
@@ -260,6 +261,12 @@ function FiltersPanel({
   // Local draft state: filters only take effect on Apply, so typing an id or
   // dragging a slider doesn't fire a request per keystroke.
   const [draft, setDraft] = useState<PublicProfileFilters>(filters);
+  const [location, setLocation] = useState<ProfileLocation>({
+    ...EMPTY_LOCATION,
+    country: filters.country ?? '',
+    state: filters.state ?? '',
+    city: filters.city ?? '',
+  });
   const [ageMin, setAgeMin] = useState(filters.ageMin ?? MIN_AGE);
   const [ageMax, setAgeMax] = useState(filters.ageMax ?? MAX_AGE);
   const [heightMin, setHeightMin] = useState(filters.heightMinCm ?? MIN_HEIGHT_CM);
@@ -272,6 +279,9 @@ function FiltersPanel({
   function apply() {
     onApply({
       ...draft,
+      country: location.country || undefined,
+      state: location.state || undefined,
+      city: location.city || undefined,
       ageMin: ageMin > MIN_AGE ? ageMin : undefined,
       ageMax: ageMax < MAX_AGE ? ageMax : undefined,
       heightMinCm: heightMin > MIN_HEIGHT_CM ? heightMin : undefined,
@@ -281,6 +291,7 @@ function FiltersPanel({
 
   function clear() {
     setDraft({});
+    setLocation(EMPTY_LOCATION);
     setAgeMin(MIN_AGE);
     setAgeMax(MAX_AGE);
     setHeightMin(MIN_HEIGHT_CM);
@@ -353,19 +364,7 @@ function FiltersPanel({
         </div>
       </div>
 
-      <Select
-        label={t('profiles.homeDivision')}
-        placeholder={t('profiles.anyDivision')}
-        value={draft.division ?? ''}
-        onChange={(e) => set('division', e.target.value)}
-      >
-        <option value="">{t('profiles.anyDivision')}</option>
-        {BD_DIVISIONS.map((d) => (
-          <option key={d} value={d}>
-            {d}
-          </option>
-        ))}
-      </Select>
+      <LocationPicker showZip={false} value={location} onChange={setLocation} />
 
       <Select
         label={t('profiles.education')}

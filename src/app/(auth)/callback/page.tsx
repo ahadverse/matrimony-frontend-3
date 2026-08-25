@@ -50,7 +50,7 @@ function OAuthCallbackHandler() {
       .then(async (data) => {
         setToken(data.accessToken);
         await queryClient.invalidateQueries({ queryKey: ['me'] });
-        router.replace(data.isNewUser ? '/register?step=basic' : '/dashboard');
+        router.replace(data.needsOnboarding ? '/register?step=basic' : '/dashboard');
       })
       .catch((e) => {
         toast.error(e instanceof ApiError ? String(e.message) : t('auth.callback.error'));
