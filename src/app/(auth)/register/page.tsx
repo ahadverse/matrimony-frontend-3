@@ -197,10 +197,9 @@ function RegisterWizard() {
   // A Google/Facebook sign-up that just created an account lands here via
   // /register?step=basic instead of the 'choose' step — read via a lazy
   // initializer (not an effect) since useSearchParams() is safe at render time.
-  const [step, setStep] = useState<Step>(() => {
-    const requestedStep = searchParams.get('step') as Step | null;
-    return requestedStep && WIZARD_STEPS.includes(requestedStep as WizardStep) ? requestedStep : 'choose';
-  });
+  const requestedStep = searchParams.get('step') as Step | null;
+  const hasRequestedStep = !!requestedStep && WIZARD_STEPS.includes(requestedStep as WizardStep);
+  const [step, setStep] = useState<Step>(() => (hasRequestedStep ? (requestedStep as Step) : 'choose'));
   const [phone, setPhone] = useState('+8801');
   const [phoneIsBangladeshi, setPhoneIsBangladeshi] = useState(true);
   const [otp, setOtp] = useState('');
@@ -231,7 +230,11 @@ function RegisterWizard() {
     try {
       const saved = JSON.parse(raw) as StoredProgress;
       if (!saved.step || saved.step === 'done') return;
-      setStep(saved.step);
+      // An explicit ?step= means the backend routed us here deliberately — an
+      // OAuth signup whose account already exists. Stored progress from an
+      // abandoned attempt must not drag them back to 'account', which would
+      // ask a Google member for an email and password they never set.
+      if (!hasRequestedStep) setStep(saved.step);
       setPhone(saved.phone ?? '+8801');
       // Spread over a fresh form so a stored payload written by an earlier
       // version of this wizard can't leave a new field undefined.
