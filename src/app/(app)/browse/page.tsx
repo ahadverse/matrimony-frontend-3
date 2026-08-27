@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { SlidersHorizontal, UserRoundPen } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -23,6 +23,7 @@ import {
   type BrowseFilters,
 } from '@/lib/queries';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
+import { useIsSignedIn } from '@/lib/auth-token';
 import { ApiError } from '@/lib/api-client';
 import { EMPTY_LOCATION, type ProfileLocation } from '@/lib/geo';
 import type { BrowseCard } from '@/lib/types';
@@ -63,14 +64,20 @@ export default function BrowsePage() {
 
 function BrowseContent() {
   const { t } = useLanguage();
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const signedIn = useIsSignedIn();
   const [filters, setFilters] = useState<BrowseFilters>(() => filtersFromSearchParams(searchParams));
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [match, setMatch] = useState<{ card: BrowseCard; conversationId: string } | null>(null);
 
-  const { data: profile, isLoading: isProfileLoading } = useMyProfile();
+  // A guest has no profile to be incomplete, so the completion gate below
+  // only applies once someone is actually signed in — they can still see and
+  // attempt the deck; the login prompt lives in handleSwipe instead.
+  const { data: profile, isLoading: isProfileLoading } = useMyProfile(signedIn);
   const completionPercent = profile?.completionPercent ?? 0;
-  const canBrowse = completionPercent >= MIN_BROWSE_COMPLETION_PERCENT;
+  const canBrowse = !signedIn || completionPercent >= MIN_BROWSE_COMPLETION_PERCENT;
 
   const { data: cards, isLoading, isError, isFetching, refetch } = useBrowseFeed(filters, canBrowse);
   const swipe = useSwipeMutation();
@@ -124,6 +131,14 @@ function BrowseContent() {
   );
 
   function handleSwipe(card: BrowseCard, action: SwipeAction) {
+    // Guests can view and attempt the deck, but the swipe itself is the
+    // gated action — send them to log in instead of recording it, same
+    // redirect-with-return-path pattern as the public profiles directory.
+    if (!signedIn) {
+      router.push(`/login?redirect=${encodeURIComponent(`${pathname}?${searchParams.toString()}`)}`);
+      return;
+    }
+
     setDeck((prev) => prev.filter((c) => c.id !== card.id));
 
     swipe.mutate(

@@ -336,10 +336,11 @@ export function useSwipeMutation() {
   });
 }
 
-export function useLikesYou() {
+export function useLikesYou(enabled = true) {
   return useQuery({
     queryKey: ['likes-you'],
     queryFn: () => api.get<LikedYouCard[]>('swipes/likes-you'),
+    enabled,
   });
 }
 
@@ -469,10 +470,11 @@ export function useStartConversation() {
   });
 }
 
-export function useMyProfile() {
+export function useMyProfile(enabled = true) {
   return useQuery({
     queryKey: ['my-profile'],
     queryFn: () => api.get<MyProfile | null>('profiles/me'),
+    enabled,
   });
 }
 
@@ -532,11 +534,12 @@ export function useConversations(enabled = true) {
   });
 }
 
-export function useUnreadCount() {
+export function useUnreadCount(enabled = true) {
   return useQuery({
     queryKey: ['unread-count'],
     queryFn: () => api.get<{ count: number }>('conversations/unread-count'),
     staleTime: 15_000,
+    enabled,
   });
 }
 

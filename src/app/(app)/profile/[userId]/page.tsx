@@ -111,7 +111,7 @@ function LockedProfileView({ userId }: { userId: string }) {
       profile={preview}
       heading={preview.name}
       photos={preview.photos}
-      blurPhotos
+      clearPhotoUrl={preview.photoUrl}
       badge={
         <Badge tone="warning">
           <Lock size={11} /> {t('profileDetail.lockedTitle')}
@@ -140,14 +140,20 @@ function ProfileLayout({
   profile,
   heading,
   photos,
-  blurPhotos,
+  clearPhotoUrl,
   badge,
   actions,
 }: {
   profile: LockedProfile | UnlockedProfile;
   heading: string;
   photos: string[];
-  blurPhotos?: boolean;
+  /**
+   * On a locked profile the primary photo comes back unblurred while the rest
+   * of the gallery does not, so the lock overlay is per-photo rather than a
+   * single flag: it shows for every gallery entry except this one. Omitted for
+   * an unlocked profile, where nothing is blurred.
+   */
+  clearPhotoUrl?: string | null;
   badge: React.ReactNode;
   actions: React.ReactNode;
 }) {
@@ -170,7 +176,7 @@ function ProfileLayout({
           <Card className="overflow-hidden">
             <div className="relative aspect-square w-full bg-[var(--color-surface)]">
               <ProfilePhoto photoUrl={gallery[activePhoto] ?? gallery[0]} name={heading} />
-              {blurPhotos && (
+              {profile.locked && (gallery[activePhoto] ?? gallery[0]) !== clearPhotoUrl && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[var(--color-scrim)]">
                   <Lock size={22} className="text-[var(--color-on-primary)]" />
                   <span className="text-xs font-semibold text-[var(--color-on-primary)]">

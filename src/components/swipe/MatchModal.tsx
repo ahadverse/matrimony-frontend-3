@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { useMyProfile } from '@/lib/queries';
+import { useIsSignedIn } from '@/lib/auth-token';
 import { resolveUploadUrl } from '@/lib/api-client';
 import type { BrowseCard } from '@/lib/types';
 
@@ -30,7 +31,13 @@ function Avatar({ url, name }: { url: string | null; name: string }) {
 export function MatchModal({ match, onClose }: MatchModalProps) {
   const { t } = useLanguage();
   const router = useRouter();
-  const { data: myProfile } = useMyProfile();
+  // A match can only ever happen after a signed-in swipe, but this modal is
+  // always mounted on the (guest-visible) browse page — gate the fetch so a
+  // guest doesn't pollute the shared ['my-profile'] query with a failing
+  // request that flips isLoading/isError for every other observer of it
+  // (ProfileGuard and BrowseContent's own, deliberately disabled, calls).
+  const signedIn = useIsSignedIn();
+  const { data: myProfile } = useMyProfile(signedIn);
   const myPhoto = resolveUploadUrl(myProfile?.photos.find((p) => p.isPrimary)?.url ?? myProfile?.photos[0]?.url ?? null);
 
   return (

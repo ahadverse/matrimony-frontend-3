@@ -57,15 +57,6 @@ export function PublicProfileRow({ profile, unlockCost, onUnlock, unlocking }: P
           </div>
         )}
 
-        {profile.locked && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-[var(--color-scrim)] px-2 text-center">
-            <Lock size={18} className="text-[var(--color-on-primary)]" />
-            <span className="text-[10px] font-semibold leading-tight text-[var(--color-on-primary)]">
-              {t('profiles.premiumOverlay')}
-            </span>
-          </div>
-        )}
-
         {profile.isSpotlighted && (
           <span className="gradient-gold absolute left-2 top-2 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold text-[var(--color-on-gold)]">
             <Sparkles size={10} /> Spotlight

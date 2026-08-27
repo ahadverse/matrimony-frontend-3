@@ -35,6 +35,7 @@ function OAuthCallbackHandler() {
     const code = searchParams.get('code');
 
     if (error) {
+      console.error('[oauth callback] backend redirected with error=', error, searchParams.get('error_description'));
       toast.error(t('auth.callback.error'));
       router.replace('/login');
       return;
@@ -53,6 +54,7 @@ function OAuthCallbackHandler() {
         router.replace(data.needsOnboarding ? '/register?step=basic' : '/dashboard');
       })
       .catch((e) => {
+        console.error('[oauth callback] token exchange failed', e);
         toast.error(e instanceof ApiError ? String(e.message) : t('auth.callback.error'));
         router.replace('/login');
       });

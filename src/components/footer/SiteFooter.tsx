@@ -9,6 +9,7 @@ const platformLinks = [
   { href: '/profiles', labelKey: 'nav.profiles' },
   { href: '/checkout', labelKey: 'footer.plans' },
   { href: '/how-it-works', labelKey: 'footer.guide' },
+  { href: '/faq', labelKey: 'footer.faq' },
   { href: '/contact-us', labelKey: 'footer.contact' },
   { href: '/register', labelKey: 'footer.joinFree' },
 ] as const;

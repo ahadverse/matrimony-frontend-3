@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Compass, HeartHandshake, MessageCircle, Users, UserRound } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { useLikesYou, useUnreadCount } from '@/lib/queries';
+import { useIsSignedIn } from '@/lib/auth-token';
 
 const tabs = [
   { href: '/profiles', icon: Users, labelKey: 'nav.profiles' },
@@ -17,8 +18,9 @@ const tabs = [
 export function BottomTabBar() {
   const { t } = useLanguage();
   const pathname = usePathname();
-  const { data: likesYou } = useLikesYou();
-  const { data: unread } = useUnreadCount();
+  const signedIn = useIsSignedIn();
+  const { data: likesYou } = useLikesYou(signedIn);
+  const { data: unread } = useUnreadCount(signedIn);
 
   // A chat thread wants the full screen on mobile — the tab bar would eat
   // into the space the composer needs.

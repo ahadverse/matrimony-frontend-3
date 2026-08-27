@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SESSION_COOKIE } from '@/lib/session';
 
+// /browse is deliberately absent — the discover deck is public. A guest can
+// view and attempt to swipe it; swiping itself is what prompts login (see
+// handleSwipe in browse/page.tsx), not the page load.
 const PROTECTED_PREFIXES = [
   '/dashboard',
-  '/browse',
   '/interests',
   '/profile',
   '/edit-profile',
