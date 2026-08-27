@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -27,6 +27,7 @@ import { RichText } from '@/components/ui/RichText';
 import { LocationPicker } from '@/components/ui/LocationPicker';
 import { DobPicker } from '@/components/ui/DobPicker';
 import { api, ApiError } from '@/lib/api-client';
+import { useMyProfile } from '@/lib/queries';
 import { setToken } from '@/lib/auth-token';
 import { EMPTY_LOCATION, type ProfileLocation } from '@/lib/geo';
 import { cmToFeetInches, feetInchesToCm } from '@/lib/height';
@@ -210,6 +211,21 @@ function RegisterWizard() {
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [uploadedCount, setUploadedCount] = useState(0);
 
+  // An OAuth signup already has a profile row seeded with the provider's
+  // display name, so pull it in rather than showing them a blank name field.
+  // Only for the OAuth entry point (?step=), and never over stored progress or
+  // anything already typed — this fills a gap, it does not overwrite.
+  const restoredProgress = useRef(false);
+  const seededFromProfile = useRef(false);
+  const { data: existingProfile } = useMyProfile(hasRequestedStep);
+
+  useEffect(() => {
+    if (!hasRequestedStep || seededFromProfile.current) return;
+    if (restoredProgress.current || !existingProfile?.name) return;
+    seededFromProfile.current = true;
+    setForm((prev) => (prev.name ? prev : { ...prev, name: existingProfile.name }));
+  }, [hasRequestedStep, existingProfile]);
+
   function set<K extends keyof WizardForm>(key: K, value: WizardForm[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
@@ -236,6 +252,7 @@ function RegisterWizard() {
       // ask a Google member for an email and password they never set.
       if (!hasRequestedStep) setStep(saved.step);
       setPhone(saved.phone ?? '+8801');
+      restoredProgress.current = true;
       // Spread over a fresh form so a stored payload written by an earlier
       // version of this wizard can't leave a new field undefined.
       setForm({ ...emptyForm(), ...(saved.form ?? {}) });
