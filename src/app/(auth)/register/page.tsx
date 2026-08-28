@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -27,7 +27,7 @@ import { RichText } from '@/components/ui/RichText';
 import { LocationPicker } from '@/components/ui/LocationPicker';
 import { DobPicker } from '@/components/ui/DobPicker';
 import { api, ApiError } from '@/lib/api-client';
-import { useMyProfile } from '@/lib/queries';
+import { useCurrentUser, useMyProfile } from '@/lib/queries';
 import { setToken } from '@/lib/auth-token';
 import { EMPTY_LOCATION, type ProfileLocation } from '@/lib/geo';
 import { cmToFeetInches, feetInchesToCm } from '@/lib/height';
@@ -212,19 +212,13 @@ function RegisterWizard() {
   const [uploadedCount, setUploadedCount] = useState(0);
 
   // An OAuth signup already has a profile row seeded with the provider's
-  // display name, so pull it in rather than showing them a blank name field.
-  // Only for the OAuth entry point (?step=), and never over stored progress or
-  // anything already typed — this fills a gap, it does not overwrite.
-  const restoredProgress = useRef(false);
-  const seededFromProfile = useRef(false);
+  // display name, and a user row carrying the provider's email — fetched only
+  // on the OAuth entry point (?step=), where the seeding below pre-fills them
+  // instead of opening on a blank name field.
   const { data: existingProfile } = useMyProfile(hasRequestedStep);
-
-  useEffect(() => {
-    if (!hasRequestedStep || seededFromProfile.current) return;
-    if (restoredProgress.current || !existingProfile?.name) return;
-    seededFromProfile.current = true;
-    setForm((prev) => (prev.name ? prev : { ...prev, name: existingProfile.name }));
-  }, [hasRequestedStep, existingProfile]);
+  const { data: currentUser } = useCurrentUser(hasRequestedStep);
+  const [seeded, setSeeded] = useState(false);
+  const [restoreChecked, setRestoreChecked] = useState(false);
 
   function set<K extends keyof WizardForm>(key: K, value: WizardForm[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -241,6 +235,7 @@ function RegisterWizard() {
   // used to strand people mid-registration. Files can't be persisted, so the
   // photos step always resumes with an empty selection.
   useEffect(() => {
+    setRestoreChecked(true);
     const raw = sessionStorage.getItem(REGISTER_PROGRESS_KEY);
     if (!raw) return;
     try {
@@ -252,7 +247,6 @@ function RegisterWizard() {
       // ask a Google member for an email and password they never set.
       if (!hasRequestedStep) setStep(saved.step);
       setPhone(saved.phone ?? '+8801');
-      restoredProgress.current = true;
       // Spread over a fresh form so a stored payload written by an earlier
       // version of this wizard can't leave a new field undefined.
       setForm({ ...emptyForm(), ...(saved.form ?? {}) });
@@ -260,6 +254,33 @@ function RegisterWizard() {
       sessionStorage.removeItem(REGISTER_PROGRESS_KEY);
     }
   }, []);
+
+  /**
+   * Folds the provider's name and email into the form as soon as those queries
+   * land — an in-render adjustment rather than an effect, since it reacts to
+   * fetched data becoming available and would otherwise cost a second render
+   * pass (https://react.dev/learn/you-might-not-need-an-effect).
+   *
+   * Gap-filling: a field the member has typed into, or that the restore above
+   * refilled, always wins. Crucially the guard is the field being *empty* and
+   * not "was there stored progress" — merely having a stored draft must not
+   * veto the seed, because opening /register saves an empty one before the
+   * visitor has clicked "Continue with Google" at all. That is the ordinary
+   * way into this screen, so vetoing on it blanked the name nearly every time.
+   *
+   * Waits on `restoreChecked` so a cache hit can never seed ahead of the
+   * restore effect, which replaces the whole form and would undo it.
+   */
+  const providerName = existingProfile?.name?.trim() ?? '';
+  const providerEmail = currentUser?.email?.trim() ?? '';
+  if (hasRequestedStep && restoreChecked && !seeded && (providerName || providerEmail)) {
+    setSeeded(true);
+    setForm((prev) => ({
+      ...prev,
+      name: prev.name.trim() ? prev.name : providerName,
+      email: prev.email.trim() ? prev.email : providerEmail,
+    }));
+  }
 
   useEffect(() => {
     if (step === 'done') {
