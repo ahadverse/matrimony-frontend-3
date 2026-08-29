@@ -88,7 +88,16 @@ function PublicProfilesContent() {
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const signedIn = useIsSignedIn();
 
-  const { data, isLoading, isError, refetch } = usePublicProfiles(filters, page);
+  // A signed-in member is served the opposite gender and nothing else, so a
+  // `gender` left over from a deep link or an earlier anonymous session is
+  // dropped rather than sent — the backend would ignore it anyway, and keeping
+  // it would inflate the "Filters (n)" badge with a filter that does nothing.
+  const effectiveFilters = useMemo(
+    () => (signedIn ? { ...filters, gender: undefined } : filters),
+    [filters, signedIn],
+  );
+
+  const { data, isLoading, isError, refetch } = usePublicProfiles(effectiveFilters, page);
   // Only worth asking once there is a wallet to spend from — an anonymous
   // visitor sees the bare "Unlock" label and is sent to login on click.
   const { data: wallet } = useWallet(signedIn);
@@ -102,8 +111,8 @@ function PublicProfilesContent() {
   }, []);
 
   const activeFilterCount = useMemo(
-    () => Object.values(filters).filter((v) => v !== undefined && v !== '').length,
-    [filters],
+    () => Object.values(effectiveFilters).filter((v) => v !== undefined && v !== '').length,
+    [effectiveFilters],
   );
 
   function requestUnlock(userId: string) {
@@ -156,7 +165,7 @@ function PublicProfilesContent() {
 
       <div className="grid gap-6 lg:grid-cols-[260px_1fr] lg:items-start">
         <aside className="hidden lg:block">
-          <FiltersPanel filters={filters} onApply={applyFilters} />
+          <FiltersPanel filters={filters} onApply={applyFilters} showGender={!signedIn} />
         </aside>
 
         <div>
@@ -220,6 +229,7 @@ function PublicProfilesContent() {
       <Modal open={filterModalOpen} onClose={() => setFilterModalOpen(false)} title={t('profiles.filters')}>
         <FiltersPanel
           filters={filters}
+          showGender={!signedIn}
           onApply={(next) => {
             applyFilters(next);
             setFilterModalOpen(false);
@@ -252,9 +262,17 @@ function PublicProfilesContent() {
 function FiltersPanel({
   filters,
   onApply,
+  showGender,
 }: {
   filters: PublicProfileFilters;
   onApply: (next: PublicProfileFilters) => void;
+  /**
+   * Off for a signed-in member: the directory serves them the opposite gender
+   * and nothing else (enforced server-side), so a control that cannot change
+   * the result would only mislead. An anonymous visitor has no gender on file,
+   * so for them it is a real filter.
+   */
+  showGender: boolean;
 }) {
   const { t } = useLanguage();
 
@@ -301,29 +319,31 @@ function FiltersPanel({
 
   return (
     <Card className="flex flex-col gap-5 p-4">
-      <div>
-        <span className="text-sm font-medium text-[var(--color-text-muted)]">{t('profiles.gender')}</span>
-        <div className="mt-1.5 grid grid-cols-3 gap-1.5">
-          {[
-            { value: undefined, label: t('profiles.anyGender') },
-            { value: 'male', label: t('profiles.male') },
-            { value: 'female', label: t('profiles.female') },
-          ].map((option) => (
-            <button
-              key={option.label}
-              type="button"
-              onClick={() => set('gender', option.value)}
-              className={`h-9 rounded-lg border text-xs font-medium transition-colors ${
-                draft.gender === option.value
-                  ? 'border-transparent gradient-primary text-[var(--color-on-primary)]'
-                  : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]'
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
+      {showGender && (
+        <div>
+          <span className="text-sm font-medium text-[var(--color-text-muted)]">{t('profiles.gender')}</span>
+          <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+            {[
+              { value: undefined, label: t('profiles.anyGender') },
+              { value: 'male', label: t('profiles.male') },
+              { value: 'female', label: t('profiles.female') },
+            ].map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                onClick={() => set('gender', option.value)}
+                className={`h-9 rounded-lg border text-xs font-medium transition-colors ${
+                  draft.gender === option.value
+                    ? 'border-transparent gradient-primary text-[var(--color-on-primary)]'
+                    : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div>
         <span className="text-sm font-medium text-[var(--color-text-muted)]">{t('profiles.age')}</span>

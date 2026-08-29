@@ -11,6 +11,9 @@ import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { ApiError } from '@/lib/api-client';
 import { MAX_IMAGE_SIZE_MB, validateImageFile } from '@/lib/fileValidation';
 
+const NID_MIN_DIGITS = 10;
+const NID_MAX_DIGITS = 17;
+
 export default function VerifySelfiePage() {
   const { t } = useLanguage();
   const { data: verification, isLoading } = useMyVerification();
@@ -33,7 +36,16 @@ export default function VerifySelfiePage() {
     );
   }
 
-  const isValid = /^\d{10}$|^\d{13}$|^\d{17}$/.test(nidNumber.trim()) && !!selfie;
+  // Bangladesh has issued NID numbers in several lengths — the 10-digit Smart
+  // Card number, the 13-digit form and the 17-digit form that prefixes the birth
+  // year — so the check is the range rather than those three exact lengths,
+  // which turned away real cards. Mirrors SubmitVerificationDto on the backend.
+  const nid = nidNumber.trim();
+  const nidIsValid = /^\d{10,17}$/.test(nid);
+  // Silence is what made this feel broken: the CTA sat disabled with nothing
+  // saying why. Only complain once there is enough typed to judge.
+  const nidError = nid.length > 0 && nid.length < NID_MIN_DIGITS ? t('verification.nidInvalid') : undefined;
+  const isValid = nidIsValid && !!selfie;
 
   function handleFileChange(file: File | null) {
     if (!file) {
@@ -146,9 +158,13 @@ export default function VerifySelfiePage() {
             <Input
               label={t('verification.nidNumber')}
               required
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={NID_MAX_DIGITS}
               placeholder={t('verification.nidPlaceholder')}
               value={nidNumber}
-              onChange={(e) => setNidNumber(e.target.value.replace(/\D/g, ''))}
+              error={nidError}
+              onChange={(e) => setNidNumber(e.target.value.replace(/\D/g, '').slice(0, NID_MAX_DIGITS))}
             />
             <button
               type="button"

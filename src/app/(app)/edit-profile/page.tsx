@@ -464,23 +464,26 @@ function EditProfileContent() {
               </option>
             ))}
           </Select>
+          {/* Only the relative's *name* depends on someone else running the
+              profile. The guardian's phone number does not — families expect it
+              on the bio-data of a self-managed profile too, and hiding the input
+              behind "Profile Created By" was why it was always blank on the
+              detail page. */}
           {form.profileCreatedBy !== '' && form.profileCreatedBy !== 'self' && (
-            <>
-              <Input
-                id="field-relativeName"
-                label={t('editProfile.relativeName')}
-                value={form.relativeName}
-                onChange={(e) => set('relativeName', e.target.value)}
-              />
-              <Input
-                id="field-relativePhone"
-                label={t('editProfile.relativePhone')}
-                placeholder="+8801700000000"
-                value={form.relativePhone}
-                onChange={(e) => set('relativePhone', e.target.value)}
-              />
-            </>
+            <Input
+              id="field-relativeName"
+              label={t('editProfile.relativeName')}
+              value={form.relativeName}
+              onChange={(e) => set('relativeName', e.target.value)}
+            />
           )}
+          <Input
+            id="field-relativePhone"
+            label={t('editProfile.relativePhone')}
+            placeholder="+8801700000000"
+            value={form.relativePhone}
+            onChange={(e) => set('relativePhone', e.target.value)}
+          />
           <Input id="field-motherTongue" label={t('editProfile.motherTongue')} placeholder="e.g. Bangla" value={form.motherTongue} onChange={(e) => set('motherTongue', e.target.value)} />
           <Input id="field-englishComfort" label={t('editProfile.englishComfort')} placeholder="e.g. Fluent, Basic" value={form.englishComfort} onChange={(e) => set('englishComfort', e.target.value)} />
           <Input id="field-residencyStatus" label={t('editProfile.residencyStatus')} placeholder="e.g. Local, Permanent Resident" value={form.residencyStatus} onChange={(e) => set('residencyStatus', e.target.value)} />

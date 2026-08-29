@@ -69,6 +69,12 @@ export function ProfileBioSections({ profile }: { profile: LockedProfile | Unloc
       key: 'basic',
       title: t('profileDetail.sectionBasic'),
       fields: [
+        {
+          icon: UserRound,
+          label: t('profileDetail.gender'),
+          value: profile.gender ? t(`profiles.${profile.gender}`) : null,
+        },
+        { icon: Baby, label: t('editProfile.age'), value: optional(profile.age) },
         { icon: Heart, label: t('profileDetail.maritalStatus'), value: t(`profileDetail.${profile.maritalStatus}`) },
         { icon: Heart, label: t('profileDetail.religion'), value: optional(profile.religion) },
         { icon: Flag, label: t('profileDetail.nationality'), value: optional(profile.nationality) },
@@ -83,11 +89,6 @@ export function ProfileBioSections({ profile }: { profile: LockedProfile | Unloc
           icon: UserRound,
           label: t('profileDetail.relativeName'),
           value: profile.locked ? null : optional(profile.relativeName),
-        },
-        {
-          icon: Phone,
-          label: t('profileDetail.relativePhone'),
-          value: profile.locked ? null : optional(profile.relativePhone),
         },
       ],
     },
@@ -163,6 +164,11 @@ export function ProfileBioSections({ profile }: { profile: LockedProfile | Unloc
           label: t('profileDetail.permanentAddress'),
           value: profile.locked ? null : optional(profile.permanentAddress),
         },
+        {
+          icon: MapPin,
+          label: t('auth.register.zip'),
+          value: profile.locked ? null : optional(profile.zip),
+        },
       ],
     },
     {
@@ -211,6 +217,9 @@ export function ProfileBioSections({ profile }: { profile: LockedProfile | Unloc
 
   // Contact details are what unlocking buys, so this section exists only on the
   // unlocked branch — there is no locked shape to accidentally read them from.
+  // The guardian's number sits here rather than under Basic: a family running
+  // the profile is who a match actually rings, so it belongs with the phone and
+  // email it is an alternative to.
   if (!profile.locked) {
     sections.push({
       key: 'contact',
@@ -218,6 +227,7 @@ export function ProfileBioSections({ profile }: { profile: LockedProfile | Unloc
       fields: [
         { icon: Phone, label: t('profileDetail.phone'), value: optional(profile.phone) },
         { icon: Mail, label: t('profileDetail.email'), value: optional(profile.email) },
+        { icon: Phone, label: t('profileDetail.relativePhone'), value: optional(profile.relativePhone) },
       ],
     });
   }

@@ -54,15 +54,23 @@ import type { AuthResponse, Gender, ProfileCreatedBy } from '@/lib/types';
 
 /**
  * Registration starts from Google/Facebook or an email+password account, then
- * walks through the bio-data one themed screen at a time, and only asks for
- * (and verifies) a phone number on the very last step — most countries have
- * no SMS gateway wired up here, so that step emails the code instead of
- * texting it whenever the phone isn't a Bangladeshi number.
+ * walks through the bio-data one themed screen at a time, and asks for a phone
+ * number on the very last step.
  *
  * Each wizard step saves its own slice via `PUT profiles/me`, which is a
  * partial upsert — so someone who drops out at "Life Style" still leaves a
  * profile with everything up to that point, rather than nothing at all.
  */
+
+/**
+ * The SMS gateway is not live yet, so the last step records the phone number
+ * via `PATCH users/me/phone` and finishes, instead of sending a code and asking
+ * for it back. Everything the OTP path needs is still here behind this flag —
+ * flip it to `true` once the gateway is wired up and the 'otp' step returns
+ * with no other change. The backend leaves `phoneVerifiedAt` unset meanwhile,
+ * so a number recorded now is not mistaken for a verified one later.
+ */
+const OTP_VERIFICATION_ENABLED: boolean = false;
 
 type Step =
   | 'choose'
@@ -117,6 +125,8 @@ interface WizardForm {
   sistersUnmarried: string;
   sistersMarried: string;
   familyDetails: string;
+  /** Guardian / family contact number — who a match rings besides the member. */
+  relativePhone: string;
   location: ProfileLocation;
   // Physical
   heightCm: string;
@@ -161,6 +171,7 @@ const emptyForm = (): WizardForm => ({
   sistersUnmarried: '0',
   sistersMarried: '0',
   familyDetails: '',
+  relativePhone: '',
   location: EMPTY_LOCATION,
   heightCm: '',
   weightKg: '',
@@ -316,6 +327,17 @@ function RegisterWizard() {
       setStep('basic');
     },
     onError: (e) => toast.error(e instanceof ApiError ? String(e.message) : 'Could not create account'),
+  });
+
+  // Wizard's last step while OTP_VERIFICATION_ENABLED is off: record the number
+  // on the account and finish. No code is sent and none is asked for.
+  const savePhone = useMutation({
+    mutationFn: () => api.patch('users/me/phone', { phone }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['me'] });
+      setStep('done');
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? String(e.message) : 'Could not save your phone number'),
   });
 
   // Wizard's last step: verify the phone the member just typed in. Bangladeshi
@@ -831,6 +853,17 @@ function RegisterWizard() {
                   </div>
                 </FieldRow>
 
+                {/* Collected for every profile, not just relative-managed ones —
+                    families expect a guardian's number on the bio-data, and it
+                    is one of the details an unlock pays for. */}
+                <Input
+                  type="tel"
+                  label={t('auth.register.relativePhone')}
+                  placeholder="+8801700000000"
+                  value={form.relativePhone}
+                  onChange={(e) => set('relativePhone', e.target.value)}
+                />
+
                 <LocationPicker required value={form.location} onChange={(v) => set('location', v)} />
 
                 <TextareaField
@@ -867,6 +900,7 @@ function RegisterWizard() {
                       Number(form.sistersUnmarried) +
                       Number(form.sistersMarried),
                     familyDetails: str(form.familyDetails),
+                    relativePhone: str(form.relativePhone),
                     country: form.location.country,
                     countryCode: form.location.countryCode || undefined,
                     state: form.location.state || undefined,
@@ -1147,8 +1181,12 @@ function RegisterWizard() {
 
           {step === 'phone' && (
             <div className="flex flex-col gap-4">
-              <h1 className="font-display text-2xl text-[var(--color-text)]">{t('auth.register.stepPhoneTitle')}</h1>
-              <p className="text-sm text-[var(--color-text-muted)]">{t('auth.register.stepPhoneBody')}</p>
+              <h1 className="font-display text-2xl text-[var(--color-text)]">
+                {OTP_VERIFICATION_ENABLED ? t('auth.register.stepPhoneTitle') : t('auth.register.stepPhoneTitleNoOtp')}
+              </h1>
+              <p className="text-sm text-[var(--color-text-muted)]">
+                {OTP_VERIFICATION_ENABLED ? t('auth.register.stepPhoneBody') : t('auth.register.stepPhoneBodyNoOtp')}
+              </p>
 
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -1188,14 +1226,26 @@ function RegisterWizard() {
                 placeholder={phoneIsBangladeshi ? '+8801XXXXXXXXX' : '+1XXXXXXXXXX'}
               />
               <p className="text-xs text-[var(--color-text-faint)]">
-                {phoneIsBangladeshi
-                  ? t('auth.register.phoneChannelSms')
-                  : t('auth.register.phoneChannelEmail', { email: form.email })}
+                {!OTP_VERIFICATION_ENABLED
+                  ? t('auth.register.phoneChannelNoOtp')
+                  : phoneIsBangladeshi
+                    ? t('auth.register.phoneChannelSms')
+                    : t('auth.register.phoneChannelEmail', { email: form.email })}
               </p>
 
-              <Button onClick={() => sendOtp.mutate()} loading={sendOtp.isPending}>
-                {t('auth.register.sendOtp')}
-              </Button>
+              {OTP_VERIFICATION_ENABLED ? (
+                <Button onClick={() => sendOtp.mutate()} loading={sendOtp.isPending}>
+                  {t('auth.register.sendOtp')}
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => savePhone.mutate()}
+                  loading={savePhone.isPending}
+                  disabled={phone.replace(/\D/g, '').length < 8}
+                >
+                  {t('auth.register.finish')}
+                </Button>
+              )}
             </div>
           )}
 

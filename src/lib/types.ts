@@ -217,6 +217,8 @@ export interface UnlockedProfile extends Omit<LockedProfile, 'locked'>, Location
   email: string | null;
   presentAddress: string | null;
   permanentAddress: string | null;
+  /** Part of the address the unlock buys — absent from every locked payload. */
+  zip: string | null;
   locked: false;
 }
 
