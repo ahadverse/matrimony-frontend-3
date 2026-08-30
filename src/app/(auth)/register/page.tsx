@@ -858,6 +858,7 @@ function RegisterWizard() {
                     is one of the details an unlock pays for. */}
                 <Input
                   type="tel"
+                  required
                   label={t('auth.register.relativePhone')}
                   placeholder="+8801700000000"
                   value={form.relativePhone}
@@ -877,7 +878,12 @@ function RegisterWizard() {
 
               <StepActions
                 loading={saveStep.isPending}
-                disabled={!form.fatherStatus || !form.motherStatus || !form.location.country}
+                disabled={
+                  !form.fatherStatus ||
+                  !form.motherStatus ||
+                  !form.relativePhone.trim() ||
+                  !form.location.country
+                }
                 onBack={() => setStep('education')}
                 onContinue={() =>
                   advance('physical', {
