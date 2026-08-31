@@ -6,49 +6,9 @@ import { Button } from '@/components/ui/Button';
 import { FadeIn } from '@/components/motion/FadeIn';
 import { StaggerItem, StaggerList } from '@/components/motion/StaggerList';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
+import { faqCategoryKeys } from '@/lib/faqCategories';
 
-const categories = [
-  {
-    titleKey: 'faqPage.cat1Title',
-    items: [
-      { qKey: 'faqPage.cat1q1Q', aKey: 'faqPage.cat1q1A' },
-      { qKey: 'faqPage.cat1q2Q', aKey: 'faqPage.cat1q2A' },
-      { qKey: 'faqPage.cat1q3Q', aKey: 'faqPage.cat1q3A' },
-    ],
-  },
-  {
-    titleKey: 'faqPage.cat2Title',
-    items: [
-      { qKey: 'faqPage.cat2q1Q', aKey: 'faqPage.cat2q1A' },
-      { qKey: 'faqPage.cat2q2Q', aKey: 'faqPage.cat2q2A' },
-      { qKey: 'faqPage.cat2q3Q', aKey: 'faqPage.cat2q3A' },
-    ],
-  },
-  {
-    titleKey: 'faqPage.cat3Title',
-    items: [
-      { qKey: 'faqPage.cat3q1Q', aKey: 'faqPage.cat3q1A' },
-      { qKey: 'faqPage.cat3q2Q', aKey: 'faqPage.cat3q2A' },
-      { qKey: 'faqPage.cat3q3Q', aKey: 'faqPage.cat3q3A' },
-    ],
-  },
-  {
-    titleKey: 'faqPage.cat4Title',
-    items: [
-      { qKey: 'faqPage.cat4q1Q', aKey: 'faqPage.cat4q1A' },
-      { qKey: 'faqPage.cat4q2Q', aKey: 'faqPage.cat4q2A' },
-      { qKey: 'faqPage.cat4q3Q', aKey: 'faqPage.cat4q3A' },
-    ],
-  },
-  {
-    titleKey: 'faqPage.cat5Title',
-    items: [
-      { qKey: 'faqPage.cat5q1Q', aKey: 'faqPage.cat5q1A' },
-      { qKey: 'faqPage.cat5q2Q', aKey: 'faqPage.cat5q2A' },
-      { qKey: 'faqPage.cat5q3Q', aKey: 'faqPage.cat5q3A' },
-    ],
-  },
-] as const;
+const categories = faqCategoryKeys();
 
 export default function FaqPage() {
   const { t } = useLanguage();

@@ -93,6 +93,28 @@ export const FAMILY_VALUES: FamilyValues[] = ['traditional', 'moderate', 'libera
 export const DIETS: Diet[] = ['vegetarian', 'non_vegetarian', 'not_matter'];
 export const SMOKE_OPTIONS: Smoke[] = ['non_smoker', 'smoker', 'light_social'];
 
+/**
+ * The countries surfaced as one-click entry points into the directory. Members
+ * can register from any of the 250 in `public/geo/countries.json` — this is the
+ * shortlist the marketing pages link, not a restriction on who may join. Names
+ * must match `countries.json` exactly, since they are sent as the `country`
+ * filter the public directory reads.
+ */
+export const FEATURED_COUNTRIES = [
+  'Bangladesh',
+  'India',
+  'Pakistan',
+  'United Kingdom',
+  'United States',
+  'Canada',
+  'Australia',
+  'United Arab Emirates',
+  'Saudi Arabia',
+  'Malaysia',
+  'Singapore',
+  'Qatar',
+] as const;
+
 /** The 8 divisions, matching the backend's bd-geo.json. */
 export const BD_DIVISIONS = [
   'Barishal',

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Facebook, Instagram, Linkedin, Mail, MapPin, Phone, Twitter, Youtube } from 'lucide-react';
+import { Facebook, Instagram, Mail, MapPin, Phone, Twitter, Youtube } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -13,18 +13,29 @@ import { FadeIn } from '@/components/motion/FadeIn';
 import { StaggerItem, StaggerList } from '@/components/motion/StaggerList';
 import { api, ApiError } from '@/lib/api-client';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
+import { ACTIVE_SOCIAL_LINKS } from '@/lib/seo/site';
 
 const CONTACT_PHONE = '+880 1304 082381';
 const CONTACT_EMAIL = 'biyekoralagbe@gmail.com';
 const CONTACT_ADDRESS = 'Mujib Road (Community Hospital Bhabon, 4th floor), Sirajganj';
 
-const socials = [
-  { icon: Facebook, href: 'https://facebook.com', label: 'Facebook' },
-  { icon: Twitter, href: 'https://twitter.com', label: 'Twitter' },
-  { icon: Instagram, href: 'https://instagram.com', label: 'Instagram' },
-  { icon: Linkedin, href: 'https://linkedin.com', label: 'LinkedIn' },
-  { icon: Youtube, href: 'https://youtube.com', label: 'YouTube' },
-] as const;
+// lucide ships no post-rebrand X glyph; `Twitter` is the icon for that account.
+const SOCIAL_ICONS: Record<string, typeof Facebook> = {
+  Facebook,
+  X: Twitter,
+  Instagram,
+  YouTube: Youtube,
+};
+
+// Driven by ACTIVE_SOCIAL_LINKS so the icon row and the Organization schema's
+// `sameAs` can never disagree. A label with no icon here is dropped rather than
+// rendered blank, which is what keeps site.ts free to add a network before this
+// page knows how to draw it.
+const socials = ACTIVE_SOCIAL_LINKS.filter((link) => link.label in SOCIAL_ICONS).map((link) => ({
+  icon: SOCIAL_ICONS[link.label],
+  href: link.url,
+  label: link.label,
+}));
 
 export default function ContactUsPage() {
   const { t } = useLanguage();
@@ -50,6 +61,7 @@ export default function ContactUsPage() {
           <h1 className="font-display text-2xl leading-snug text-[var(--color-text)] sm:text-3xl">
             {t('contactPage.heroTitle')}
           </h1>
+          <p className="mt-4 text-sm leading-relaxed text-[var(--color-text-muted)]">{t('contactPage.heroBody')}</p>
 
           <StaggerList className="mt-8 flex flex-col gap-4">
             {details.map(({ icon: Icon, label, value, href, tint }) => (
@@ -77,22 +89,31 @@ export default function ContactUsPage() {
           </StaggerList>
 
           <div className="mt-8">
-            <p className="font-display text-base text-[var(--color-text)]">{t('contactPage.socialTitle')}</p>
-            <div className="mt-3 flex flex-wrap gap-3">
-              {socials.map(({ icon: Icon, href, label }) => (
-                <a
-                  key={label}
-                  href={href}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  aria-label={label}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary-accent)]"
-                >
-                  <Icon size={18} />
-                </a>
-              ))}
-            </div>
+            <h2 className="font-display text-base text-[var(--color-text)]">{t('contactPage.heroHoursTitle')}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-muted)]">
+              {t('contactPage.heroHoursBody')}
+            </p>
           </div>
+
+          {socials.length > 0 && (
+            <div className="mt-8">
+              <h2 className="font-display text-base text-[var(--color-text)]">{t('contactPage.socialTitle')}</h2>
+              <div className="mt-3 flex flex-wrap gap-3">
+                {socials.map(({ icon: Icon, href, label }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    aria-label={label}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary-accent)]"
+                  >
+                    <Icon size={18} />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </FadeIn>
 
         <FadeIn delay={0.1}>

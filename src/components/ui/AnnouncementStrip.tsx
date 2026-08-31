@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
-import { api } from '@/lib/api-client';
 
 const MESSAGE_KEYS = [
   'announce.guardianMode',
@@ -13,7 +12,7 @@ const MESSAGE_KEYS = [
 const ROTATE_MS = 5000;
 
 export function AnnouncementStrip() {
-  const { t, locale, setLocale } = useLanguage();
+  const { t } = useLanguage();
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -21,15 +20,9 @@ export function AnnouncementStrip() {
     return () => clearInterval(id);
   }, []);
 
-  function toggleLocale() {
-    const next = locale === 'en' ? 'bn' : 'en';
-    setLocale(next);
-    api.patch('users/me/language', { languagePref: next }).catch(() => {});
-  }
-
   return (
     <div className="gradient-primary text-[var(--color-on-primary)]">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 text-xs font-medium sm:text-sm">
+      <div className="mx-auto flex max-w-7xl items-center justify-center gap-4 px-4 py-2 text-xs font-medium sm:text-sm">
         <div className="flex items-center gap-2">
           <span>{t(MESSAGE_KEYS[index])}</span>
           <span className="hidden items-center gap-1 sm:flex">
@@ -43,13 +36,6 @@ export function AnnouncementStrip() {
             ))}
           </span>
         </div>
-        <button
-          type="button"
-          onClick={toggleLocale}
-          className="rounded-full bg-[var(--color-on-primary)]/15 px-2.5 py-1 text-[11px] font-semibold hover:bg-[var(--color-on-primary)]/25"
-        >
-          {locale === 'en' ? 'EN | বাং' : 'বাং | EN'}
-        </button>
       </div>
     </div>
   );

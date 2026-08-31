@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { Heart } from 'lucide-react';
 import clsx from 'clsx';
@@ -28,9 +29,8 @@ export function AuthShell({ children, wide }: { children: ReactNode; wide?: bool
         className="absolute -right-16 bottom-10 h-56 w-56 -rotate-12 text-[var(--color-primary-light)]/15 sm:h-72 sm:w-72"
         aria-hidden
       />
-      <Link href="/" className="relative z-10 mb-8">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="BiyeKoraLagbe" className="h-24 w-24" />
+      <Link href="/" className="relative z-10 mb-8" aria-label="Biye Kora Lagbe">
+        <Image src="/logo.webp" alt="Biye Kora Lagbe" width={96} height={96} priority className="h-24 w-24" />
       </Link>
       <div
         className={clsx(

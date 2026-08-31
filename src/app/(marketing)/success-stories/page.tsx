@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Heart } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -13,12 +14,12 @@ import { usePublicStats } from '@/lib/queries';
 const stories = [
   {
     names: 'Arif & Nadia',
-    photo: 'https://loremflickr.com/1200/700/couple?lock=101',
+    photo: '/demo/couple-1.webp',
+    photoAlt: 'Arif and Nadia, a couple from Dhaka and Chattogram who met on Biye Kora Lagbe',
     tags: ['Islam', 'Dhaka & Chattogram', 'February 2026'],
-    metOnMarriedLater: 'Met on BiyeKoraLagbe — married 3 months later',
-    quoteBn: '"আমি বিশ্বাস করতে পারিনি এত সহজে এবং নিরাপদে জীবনসঙ্গী খুঁজে পাওয়া যায়।"',
-    quoteEn: '"I never believed finding a life partner could be this easy and this safe."',
-    body: "Arif had tried two other platforms before BiyeKoraLagbe. Both times, the conversation went nowhere — no family involvement, no structure, no sense of seriousness. He almost stopped looking. Then his younger sister suggested BiyeKoraLagbe.",
+    metOnMarriedLater: 'Met on Biye Kora Lagbe — married 3 months later',
+    quote: '"I never believed finding a life partner could be this easy and this safe."',
+    body: 'Arif had tried two other platforms before Biye Kora Lagbe. Both times the conversation went nowhere — no family involvement, no structure, no sense that anyone was serious about marriage. He had almost stopped looking when his younger sister suggested Biye Kora Lagbe, mostly because every profile on it is verified before it goes live.',
     journey: [
       { title: 'The Match', body: "Arif noticed Nadia's profile had an AI match score of 91%. She had listed family values and deen as her top priorities — exactly what he was looking for, he sent an interest that evening." },
       { title: 'Families Connect', body: "Nadia's mother reviewed the biodata PDF her daughter had sent. She called it 'the most organized proposal' she had seen. Through Guardian Mode, both families started talking on the platform." },
@@ -28,32 +29,32 @@ const stories = [
   },
   {
     names: 'Raihan & Sumaiya',
-    photo: 'https://loremflickr.com/1200/700/couple?lock=202',
-    tags: ['Islam', 'Sylhet & Dhaka', 'March 2026'],
-    metOnMarriedLater: 'Met on BiyeKoraLagbe — married 4 months later',
-    quoteBn: '"পরিবার সবসময় পাশে ছিল - প্রতিটি ধাপে। এটাই বিয়ে করা লাগবেকে অন্যদের থেকে আলাদা করে তুলেছে।"',
-    quoteEn: "\"Our families were with us at every step. That's what made BiyeKoraLagbe different from everything else.\"",
-    body: "Sumaiya's elder brother was managing her profile. She had asked him to — she felt safer that way. She shortlisted seven profiles after two weeks. Raihan was the first one the family agreed to contact.",
+    photo: '/demo/couple-2.webp',
+    photoAlt: 'Raihan and Sumaiya, a Toronto and Kuala Lumpur couple who married after meeting on Biye Kora Lagbe',
+    tags: ['Islam', 'Toronto & Kuala Lumpur', 'March 2026'],
+    metOnMarriedLater: 'Met on Biye Kora Lagbe — married 4 months later',
+    quote: "\"Our families were with us at every step. That's what made Biye Kora Lagbe different from everything else.\"",
+    body: "Sumaiya's elder brother managed her profile from the start — she had asked him to, because it felt safer than searching alone. Over two weeks the family shortlisted seven profiles together and discussed each one at home. Raihan was the first candidate everyone agreed was worth contacting.",
     journey: [
       { title: 'Guardian Shortlist', body: "Sumaiya's brother shortlisted Raihan based on the compatibility score and his verified profession. He sent an interest on her behalf through Guardian Mode." },
       { title: 'Biodata to Family', body: 'Both families downloaded the biodata PDFs and shared them with aunts and uncles over WhatsApp. The feedback from both sides was positive within days.' },
-      { title: 'Supervised Video Call', body: "A video call was arranged through BiyeKoraLagbe. Sumaiya's mother sat beside her, Raihan's father joined from his side. Both families spoke directly for the first time." },
-      { title: 'Nikah in Sylhet', body: 'The wedding took place in Sylhet in March 2026, with a reception in Dhaka the next week. Both families say they still talk daily.' },
+      { title: 'Supervised Video Call', body: "A video call was arranged through Biye Kora Lagbe. Sumaiya's mother sat beside her, Raihan's father joined from his side. Both families spoke directly for the first time." },
+      { title: 'Nikah in Kuala Lumpur', body: 'The wedding took place in Kuala Lumpur in March 2026, with a reception in Toronto the next month. Both families say they still talk daily.' },
     ],
   },
   {
     names: 'Imran & Farida',
-    photo: 'https://loremflickr.com/1200/700/couple?lock=303',
-    tags: ['Islam', 'London & Dhaka', 'April 2026'],
-    metOnMarriedLater: 'Met on BiyeKoraLagbe — married 3 months later',
-    quoteBn: '"প্রবাসে থেকে দেশের কাউকে বিয়ে করা কঠিন মনে হতো - বিয়ে করা লাগবে সেই দূরত্ব ঘুচিয়ে দিয়েছে।"',
-    quoteEn: 'Finding someone from home while living in London felt different from anywhere else.',
-    body: "Imran had been looking to marry someone from Bangladesh — someone who shared his roots, his religion, his idea of family. Every platform he tried felt either too casual or too India-focused. A friend from Sylhet sent him a BiyeKoraLagbe link.",
+    photo: '/demo/couple-3.webp',
+    photoAlt: 'Imran and Farida, a London and Dubai couple who found each other on Biye Kora Lagbe',
+    tags: ['Islam', 'London & Dubai', 'April 2026'],
+    metOnMarriedLater: 'Met on Biye Kora Lagbe — married 3 months later',
+    quote: '"Living in London, I could still meet a family abroad without either side feeling like strangers."',
+    body: 'Imran wanted to marry someone who shared his roots, his deen and his idea of what a family should be. Every platform he tried was either too casual or built for a single country. A cousin in Dubai sent him a Biye Kora Lagbe link, and it was the first site where the profiles felt like people his parents would actually recognise.',
     journey: [
-      { title: 'A Match From Abroad', body: "Imran browsed profiles from Bangladesh while based in London. Within a week he found Farida's profile. She was a teacher, from Dhaka, and he sent an interest the same night." },
-      { title: 'Across Time Zones', body: "They exchanged messages on the platform across a five-hour time difference. Farida's parents reviewed Imran's full biodata and spoke to parents in Sylhet by phone." },
-      { title: 'Imran Flies to Dhaka', body: 'In January 2026, Imran flew home. Both families met in Dhaka over four days. Farida\'s father said "we felt like we already knew him."' },
-      { title: 'Wedding & New Beginning', body: 'The nikah was in April 2026. Farida joined Imran in London two months later. Imran says: "BiyeKoraLagbe made it easy to find someone from home, wherever you\'re living."' },
+      { title: 'A Match Across Borders', body: "Imran filtered the directory by country while based in London. Within a week he found Farida's profile. She was a teacher in Dubai, and he sent an interest the same night." },
+      { title: 'Across Time Zones', body: "They exchanged messages on the platform across a four-hour time difference. Farida's parents reviewed Imran's full biodata and spoke to his parents by phone." },
+      { title: 'Imran Flies to Dubai', body: 'In January 2026, Imran flew out to meet her. Both families met in Dubai over four days. Farida\'s father said "we felt like we already knew him."' },
+      { title: 'Wedding & New Beginning', body: 'The nikah was in April 2026. Farida joined Imran in London two months later. Imran says: "Biye Kora Lagbe made it easy to find the right family, wherever you\'re living."' },
     ],
   },
 ] as const;
@@ -91,8 +92,13 @@ export default function SuccessStoriesPage() {
             <StaggerItem key={story.names}>
               <Card className="overflow-hidden p-0">
                 <div className="relative flex h-56 items-end overflow-hidden p-6 text-[var(--color-on-primary)] sm:h-64">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={story.photo} alt={story.names} className="absolute inset-0 h-full w-full object-cover" />
+                  <Image
+                    src={story.photo}
+                    alt={story.photoAlt}
+                    fill
+                    sizes="(min-width: 896px) 896px, 100vw"
+                    className="object-cover"
+                  />
                   <div className="gradient-primary absolute inset-0 opacity-55" aria-hidden />
                   <Heart strokeWidth={1} className="absolute right-6 top-6 h-16 w-16 text-[var(--color-on-primary)]/25" aria-hidden />
                   <div className="relative">
@@ -111,8 +117,7 @@ export default function SuccessStoriesPage() {
                   <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-primary-accent)]">
                     {story.metOnMarriedLater}
                   </p>
-                  <p className="font-display mt-2 text-lg text-[var(--color-text)]">{story.quoteBn}</p>
-                  <p className="mt-1 text-sm italic text-[var(--color-text-muted)]">{story.quoteEn}</p>
+                  <blockquote className="font-display mt-2 text-lg text-[var(--color-text)]">{story.quote}</blockquote>
                   <p className="mt-4 text-sm leading-relaxed text-[var(--color-text-muted)]">{story.body}</p>
 
                   <div className="mt-6 border-t border-[var(--color-border)] pt-5">
@@ -143,7 +148,7 @@ export default function SuccessStoriesPage() {
       <section className="gradient-primary px-6 py-16 text-center text-[var(--color-on-primary)]">
         <FadeIn className="mx-auto max-w-xl">
           <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-on-primary)]/70">Share your story</span>
-          <h2 className="font-display mt-3 text-2xl sm:text-3xl">Did you find your match on BiyeKoraLagbe?</h2>
+          <h2 className="font-display mt-3 text-2xl sm:text-3xl">Did you find your match on Biye Kora Lagbe?</h2>
           <p className="mt-3 text-[var(--color-on-primary)]/85">
             We would love to share your story. Names are always changed. Your story could give hope to someone still
             searching.

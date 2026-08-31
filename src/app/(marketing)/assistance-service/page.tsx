@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { ChevronDown, Heart, MessageCircleHeart, Sparkles, UserCheck, Users } from 'lucide-react';
+import clsx from 'clsx';
+import { Check, ChevronDown, Heart, MessageCircleHeart, Sparkles, UserCheck, Users } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -11,17 +12,13 @@ import { FadeIn } from '@/components/motion/FadeIn';
 import { StaggerItem, StaggerList } from '@/components/motion/StaggerList';
 import { api, ApiError } from '@/lib/api-client';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
+import { ASSISTANCE_PLANS, type AssistancePlanId } from './plans';
 
 const steps = [
   { icon: UserCheck, titleKey: 'assistantService.step1Title', bodyKey: 'assistantService.step1Body' },
   { icon: Sparkles, titleKey: 'assistantService.step2Title', bodyKey: 'assistantService.step2Body' },
   { icon: Heart, titleKey: 'assistantService.step3Title', bodyKey: 'assistantService.step3Body' },
   { icon: MessageCircleHeart, titleKey: 'assistantService.step4Title', bodyKey: 'assistantService.step4Body' },
-] as const;
-
-const plans = [
-  { labelKey: 'assistantService.plan3MonthsLabel', priceKey: 'assistantService.plan3MonthsPrice' },
-  { labelKey: 'assistantService.plan6MonthsLabel', priceKey: 'assistantService.plan6MonthsPrice' },
 ] as const;
 
 const faqs = [
@@ -31,12 +28,19 @@ const faqs = [
   { qKey: 'assistantService.faq4Q', aKey: 'assistantService.faq4A' },
   { qKey: 'assistantService.faq5Q', aKey: 'assistantService.faq5A' },
   { qKey: 'assistantService.faq6Q', aKey: 'assistantService.faq6A' },
+  { qKey: 'assistantService.faq7Q', aKey: 'assistantService.faq7A' },
+  { qKey: 'assistantService.faq8Q', aKey: 'assistantService.faq8A' },
 ] as const;
 
 export default function AssistanceServicePage() {
   const { t } = useLanguage();
+  // Lives here, not in AssistanceForm, because the pricing cards sit far below
+  // the form and both have to agree on one selection — the plan a visitor picks
+  // is submitted with the lead so sales knows what the enquiry is about.
+  const [selectedPlan, setSelectedPlan] = useState<AssistancePlanId | null>(null);
 
-  function scrollToForm() {
+  function choosePlan(id: AssistancePlanId) {
+    setSelectedPlan(id);
     document.getElementById('assistance-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
@@ -63,10 +67,15 @@ export default function AssistanceServicePage() {
           <FadeIn delay={0.2}>
             <p className="mt-5 text-lg text-[var(--color-text-muted)]">{t('assistantService.heroSubtitle')}</p>
           </FadeIn>
+          <FadeIn delay={0.22}>
+            <p className="mx-auto mt-6 max-w-2xl text-left text-sm leading-relaxed text-[var(--color-text-muted)]">
+              {t('assistantService.intro')}
+            </p>
+          </FadeIn>
         </div>
 
         <FadeIn delay={0.25} className="relative z-10 mx-auto mt-12 max-w-3xl" id="assistance-form">
-          <AssistanceForm />
+          <AssistanceForm selectedPlan={selectedPlan} onSelectPlan={setSelectedPlan} />
         </FadeIn>
       </section>
 
@@ -96,28 +105,74 @@ export default function AssistanceServicePage() {
         </div>
       </section>
 
+      {/* Prose block between the process cards and the price table — it answers
+          the two questions a family asks before looking at a number: is this
+          service meant for us, and what does the fee actually buy. */}
       <section className="px-6 py-20">
+        <div className="mx-auto grid max-w-4xl gap-10 sm:grid-cols-2">
+          <FadeIn>
+            <h2 className="font-display text-xl text-[var(--color-text)]">{t('assistantService.whoTitle')}</h2>
+            <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-muted)]">
+              {t('assistantService.whoBody')}
+            </p>
+          </FadeIn>
+          <FadeIn delay={0.1}>
+            <h2 className="font-display text-xl text-[var(--color-text)]">{t('assistantService.includedTitle')}</h2>
+            <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-muted)]">
+              {t('assistantService.includedBody')}
+            </p>
+          </FadeIn>
+        </div>
+      </section>
+
+      <section className="px-6 pb-20">
         <div className="mx-auto max-w-3xl">
           <FadeIn className="flex flex-col items-center text-center">
             <h2 className="font-display text-2xl text-[var(--color-text)] sm:text-3xl">{t('assistantService.pricingTitle')}</h2>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-[var(--color-text-muted)]">
+              {t('assistantService.pricingBody')}
+            </p>
           </FadeIn>
 
-          <StaggerList className="mt-10 grid gap-6 sm:grid-cols-2">
-            {plans.map((plan) => (
-              <StaggerItem key={plan.labelKey}>
-                <Card className="flex h-full flex-col overflow-hidden p-0 text-center">
-                  <div className="gradient-primary px-6 py-4 text-[var(--color-on-primary)]">
-                    <span className="font-display text-lg">{t(plan.labelKey)}</span>
-                  </div>
-                  <div className="flex flex-1 flex-col items-center gap-5 p-6">
-                    <span className="font-display text-3xl text-[var(--color-text)]">{t(plan.priceKey)}</span>
-                    <Button onClick={scrollToForm} className="w-full">
-                      {t('assistantService.planContinue')}
-                    </Button>
-                  </div>
-                </Card>
-              </StaggerItem>
-            ))}
+          <StaggerList
+            className="mt-10 grid gap-6 sm:grid-cols-2"
+            role="group"
+            aria-label={t('assistantService.planGroupLabel')}
+          >
+            {ASSISTANCE_PLANS.map((plan) => {
+              const isSelected = plan.id === selectedPlan;
+              return (
+                <StaggerItem key={plan.id}>
+                  {/* The selected ring is a ring rather than a border because
+                      .surface-card sets an unlayered border that any Tailwind
+                      border utility would lose to. */}
+                  <Card
+                    className={clsx(
+                      'flex h-full flex-col overflow-hidden p-0 text-center',
+                      isSelected && 'ring-2 ring-[var(--color-primary-accent)]',
+                    )}
+                  >
+                    <div className="gradient-primary px-6 py-4 text-[var(--color-on-primary)]">
+                      <span className="font-display text-lg">{t(`assistantService.${plan.labelKey}`)}</span>
+                    </div>
+                    <div
+                      className={clsx(
+                        'flex flex-1 flex-col items-center gap-5 p-6 transition-colors',
+                        isSelected && 'bg-[var(--color-primary-tint)]',
+                      )}
+                    >
+                      <span className="font-display text-3xl text-[var(--color-text)]">
+                        {t(`assistantService.${plan.priceKey}`)}
+                      </span>
+                      <Button onClick={() => choosePlan(plan.id)} aria-pressed={isSelected} className="w-full">
+                        {isSelected && <Check size={16} aria-hidden />}
+                        {isSelected ? t('assistantService.planSelected') : t('assistantService.planContinue')}
+                      </Button>
+                    </div>
+                  </Card>
+                </StaggerItem>
+              );
+            })}
           </StaggerList>
         </div>
       </section>
@@ -153,7 +208,13 @@ export default function AssistanceServicePage() {
   );
 }
 
-function AssistanceForm() {
+function AssistanceForm({
+  selectedPlan,
+  onSelectPlan,
+}: {
+  selectedPlan: AssistancePlanId | null;
+  onSelectPlan: (plan: AssistancePlanId | null) => void;
+}) {
   const { t } = useLanguage();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -163,13 +224,20 @@ function AssistanceForm() {
 
   const submit = useMutation({
     mutationFn: () =>
-      api.post('assistant-requests', { name, phone, email, profileId: profileId || undefined }),
+      api.post('assistant-requests', {
+        name,
+        phone,
+        email,
+        profileId: profileId || undefined,
+        plan: selectedPlan ?? undefined,
+      }),
     onSuccess: () => {
       setSubmitted(true);
       setName('');
       setPhone('');
       setEmail('');
       setProfileId('');
+      onSelectPlan(null);
     },
     onError: (e) => toast.error(e instanceof ApiError ? String(e.message) : t('assistantService.formError')),
   });
@@ -213,6 +281,27 @@ function AssistanceForm() {
             value={profileId}
             onChange={(e) => setProfileId(e.target.value)}
           />
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <span id="assistance-plan-label" className="text-sm font-medium text-[var(--color-text-muted)]">
+              {t('assistantService.formPlanLabel')}
+            </span>
+            <div className="flex flex-wrap gap-2" role="group" aria-labelledby="assistance-plan-label">
+              {ASSISTANCE_PLANS.map((plan) => (
+                <PlanChip
+                  key={plan.id}
+                  label={t(`assistantService.${plan.labelKey}`)}
+                  selected={plan.id === selectedPlan}
+                  onSelect={() => onSelectPlan(plan.id)}
+                />
+              ))}
+              <PlanChip
+                label={t('assistantService.formPlanNone')}
+                selected={selectedPlan === null}
+                onSelect={() => onSelectPlan(null)}
+              />
+            </div>
+            <p className="text-xs text-[var(--color-text-faint)]">{t('assistantService.formPlanHint')}</p>
+          </div>
           <Button
             onClick={() => submit.mutate()}
             loading={submit.isPending}
@@ -224,5 +313,31 @@ function AssistanceForm() {
         </div>
       )}
     </Card>
+  );
+}
+
+function PlanChip({
+  label,
+  selected,
+  onSelect,
+}: {
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      className={clsx(
+        'h-10 rounded-xl border px-4 text-sm font-medium transition-colors',
+        selected
+          ? 'border-[var(--color-primary-accent)] bg-[var(--color-primary-tint)] text-[var(--color-primary-accent)]'
+          : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]',
+      )}
+    >
+      {label}
+    </button>
   );
 }

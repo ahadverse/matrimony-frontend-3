@@ -11,8 +11,21 @@ import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { ApiError } from '@/lib/api-client';
 import { MAX_IMAGE_SIZE_MB, validateImageFile } from '@/lib/fileValidation';
 
-const NID_MIN_DIGITS = 10;
-const NID_MAX_DIGITS = 17;
+/**
+ * Identity-document numbers are not a digits-only, fixed-length thing once you
+ * leave Bangladesh: a UK driving licence is alphanumeric (MORGA657054SM9IJ), a
+ * US state licence mixes letters and digits, and plenty of national IDs group
+ * their characters with hyphens or spaces. So the rule here is deliberately
+ * loose — enough characters to be a plausible document number, and nothing
+ * more. An admin compares the number against the selfie before approving, and
+ * that review is the real check; a stricter regex here only turns away people
+ * holding valid cards. Kept in step with SubmitVerificationDto on the backend.
+ */
+const ID_MIN_CHARS = 5;
+const ID_MAX_CHARS = 32;
+/** Letters and digits carry the value; separators are cosmetic but common. */
+const ID_ALLOWED = /[^A-Za-z0-9 \-/]/g;
+const ID_SEPARATORS = /[\s\-/]/g;
 
 export default function VerifySelfiePage() {
   const { t } = useLanguage();
@@ -36,15 +49,19 @@ export default function VerifySelfiePage() {
     );
   }
 
-  // Bangladesh has issued NID numbers in several lengths — the 10-digit Smart
-  // Card number, the 13-digit form and the 17-digit form that prefixes the birth
-  // year — so the check is the range rather than those three exact lengths,
-  // which turned away real cards. Mirrors SubmitVerificationDto on the backend.
+  // Separators do not count towards the length — "AB-1234-CD" is the same
+  // document number as "AB1234CD", and a member should not have to guess which
+  // form we want.
   const nid = nidNumber.trim();
-  const nidIsValid = /^\d{10,17}$/.test(nid);
+  const nidSignificant = nid.replace(ID_SEPARATORS, '');
+  const nidIsValid =
+    nidSignificant.length >= ID_MIN_CHARS && nidSignificant.length <= ID_MAX_CHARS;
   // Silence is what made this feel broken: the CTA sat disabled with nothing
   // saying why. Only complain once there is enough typed to judge.
-  const nidError = nid.length > 0 && nid.length < NID_MIN_DIGITS ? t('verification.nidInvalid') : undefined;
+  const nidError =
+    nidSignificant.length > 0 && nidSignificant.length < ID_MIN_CHARS
+      ? t('verification.nidInvalid')
+      : undefined;
   const isValid = nidIsValid && !!selfie;
 
   function handleFileChange(file: File | null) {
@@ -158,13 +175,20 @@ export default function VerifySelfiePage() {
             <Input
               label={t('verification.nidNumber')}
               required
-              inputMode="numeric"
+              // Not inputMode="numeric": that puts a digits-only keypad in
+              // front of anyone whose document has letters in it.
               autoComplete="off"
-              maxLength={NID_MAX_DIGITS}
+              // Generous, because the cap is a paste-guard rather than a rule —
+              // ID_MAX_CHARS is what actually validates, and it ignores
+              // separators, so the raw field has to allow room for them.
+              maxLength={ID_MAX_CHARS + 8}
               placeholder={t('verification.nidPlaceholder')}
               value={nidNumber}
               error={nidError}
-              onChange={(e) => setNidNumber(e.target.value.replace(/\D/g, '').slice(0, NID_MAX_DIGITS))}
+              // Strips only characters no document number uses. It used to strip
+              // every non-digit, which made an alphanumeric licence literally
+              // impossible to type — the letters vanished as you pressed them.
+              onChange={(e) => setNidNumber(e.target.value.replace(ID_ALLOWED, ''))}
             />
             <button
               type="button"

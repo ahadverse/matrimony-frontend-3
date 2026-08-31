@@ -11,7 +11,6 @@ import { Modal } from '@/components/ui/Modal';
 import { RangeSlider } from '@/components/ui/RangeSlider';
 import { Select } from '@/components/ui/Select';
 import { LocationPicker } from '@/components/ui/LocationPicker';
-import { FadeIn } from '@/components/motion/FadeIn';
 import { PublicProfileRow } from '@/components/profile/PublicProfileRow';
 import { usePublicProfiles, useUnlockProfile, useWallet, type PublicProfileFilters } from '@/lib/queries';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
@@ -157,12 +156,9 @@ function PublicProfilesContent() {
   const unlockCost = wallet ? `${t('common.taka')}${wallet.profileViewCost}` : null;
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
-      <FadeIn className="mb-6">
-        <h1 className="font-display text-3xl text-[var(--color-text)]">{t('profiles.title')}</h1>
-        <p className="mt-1 max-w-2xl text-sm text-[var(--color-text-muted)]">{t('profiles.subtitle')}</p>
-      </FadeIn>
-
+    // The heading and intro copy are rendered by this route's server layout, so
+    // they survive the Suspense bailout this component's useSearchParams forces.
+    <div className="mx-auto w-full max-w-7xl px-4 pb-8 pt-6 sm:px-6">
       <div className="grid gap-6 lg:grid-cols-[260px_1fr] lg:items-start">
         <aside className="hidden lg:block">
           <FiltersPanel filters={filters} onApply={applyFilters} showGender={!signedIn} />

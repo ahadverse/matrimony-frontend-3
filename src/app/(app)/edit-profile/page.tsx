@@ -403,7 +403,7 @@ function EditProfileContent() {
             value={form.location}
             onChange={(next) => set('location', next)}
           />
-          <Input id="field-nationality" label={t('editProfile.nationality')} placeholder="e.g. Bangladeshi" value={form.nationality} onChange={(e) => set('nationality', e.target.value)} />
+          <Input id="field-nationality" label={t('editProfile.nationality')} placeholder="e.g. Bangladeshi, Indian, British" value={form.nationality} onChange={(e) => set('nationality', e.target.value)} />
           <Select id="field-education" label={t('profileDetail.education')} placeholder="—" value={form.education} onChange={(e) => set('education', e.target.value)}>
             {QUALIFICATIONS.map((q) => (
               <option key={q} value={q}>
@@ -487,7 +487,7 @@ function EditProfileContent() {
           <Input id="field-motherTongue" label={t('editProfile.motherTongue')} placeholder="e.g. Bangla" value={form.motherTongue} onChange={(e) => set('motherTongue', e.target.value)} />
           <Input id="field-englishComfort" label={t('editProfile.englishComfort')} placeholder="e.g. Fluent, Basic" value={form.englishComfort} onChange={(e) => set('englishComfort', e.target.value)} />
           <Input id="field-residencyStatus" label={t('editProfile.residencyStatus')} placeholder="e.g. Local, Permanent Resident" value={form.residencyStatus} onChange={(e) => set('residencyStatus', e.target.value)} />
-          <Input id="field-growUpIn" label={t('editProfile.growUpIn')} placeholder="e.g. Dhaka, Bangladesh" value={form.growUpIn} onChange={(e) => set('growUpIn', e.target.value)} />
+          <Input id="field-growUpIn" label={t('editProfile.growUpIn')} placeholder="e.g. Dhaka, Bangladesh / London, UK" value={form.growUpIn} onChange={(e) => set('growUpIn', e.target.value)} />
           <Input
             id="field-collegeUniversity"
             label={t('editProfile.collegeUniversity')}

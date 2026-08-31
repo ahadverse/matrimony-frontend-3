@@ -20,6 +20,8 @@ const faqs = [
   { qKey: 'howItWorksPage.q1Q', aKey: 'howItWorksPage.q1A' },
   { qKey: 'howItWorksPage.q2Q', aKey: 'howItWorksPage.q2A' },
   { qKey: 'howItWorksPage.q3Q', aKey: 'howItWorksPage.q3A' },
+  { qKey: 'howItWorksPage.q4Q', aKey: 'howItWorksPage.q4A' },
+  { qKey: 'howItWorksPage.q5Q', aKey: 'howItWorksPage.q5A' },
 ] as const;
 
 export default function HowItWorksPage() {
@@ -61,6 +63,12 @@ export default function HowItWorksPage() {
           aria-hidden
         />
         <Heart strokeWidth={1.25} className="absolute -left-14 bottom-10 h-56 w-56 rotate-12 text-[var(--color-primary-accent)]/15 sm:h-72 sm:w-72" aria-hidden />
+        {/* The steps were h3s sitting directly under the page h1, which left a
+            gap in the outline — and left the list starting with no heading of
+            its own. */}
+        <h2 className="font-display relative z-10 mx-auto mb-8 max-w-3xl text-2xl text-[var(--color-text)]">
+          {t('howItWorksPage.stepsTitle')}
+        </h2>
         <StaggerList className="relative z-10 mx-auto flex max-w-3xl flex-col gap-5">
           {steps.map(({ icon: Icon, numKey, titleKey, bodyKey, tipKey }) => (
             <StaggerItem key={titleKey}>

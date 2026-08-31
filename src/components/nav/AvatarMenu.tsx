@@ -6,14 +6,14 @@ import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, KeyRound, LogOut, ShieldCheck, User, Wallet } from 'lucide-react';
 import { useMyProfile } from '@/lib/queries';
-import { useLanguage, type Locale } from '@/lib/i18n/LanguageProvider';
-import { api, resolveUploadUrl } from '@/lib/api-client';
+import { useLanguage } from '@/lib/i18n/LanguageProvider';
+import { resolveUploadUrl } from '@/lib/api-client';
 import { clearToken } from '@/lib/auth-token';
 import { resetChatSocket } from '@/lib/socket';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 export function AvatarMenu() {
-  const { t, locale, setLocale } = useLanguage();
+  const { t } = useLanguage();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -25,12 +25,6 @@ export function AvatarMenu() {
     resetChatSocket();
     queryClient.clear();
     router.push('/login');
-  }
-
-  function changeLocale(next: Locale) {
-    if (next === locale) return;
-    setLocale(next);
-    api.patch('users/me/language', { languagePref: next }).catch(() => {});
   }
 
   useEffect(() => {
@@ -102,26 +96,6 @@ export function AvatarMenu() {
           <div className="flex items-center justify-between px-4 py-2.5">
             <span className="text-sm text-[var(--color-text)]">{t('nav.theme')}</span>
             <ThemeToggle />
-          </div>
-
-          <div className="flex items-center justify-between px-4 py-2.5">
-            <span className="text-sm text-[var(--color-text)]">{t('nav.language')}</span>
-            <div className="flex items-center gap-0.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] p-0.5">
-              {(['en', 'bn'] as const).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => changeLocale(value)}
-                  className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${
-                    locale === value
-                      ? 'gradient-primary text-[var(--color-on-primary)]'
-                      : 'text-[var(--color-text-faint)] hover:text-[var(--color-text)]'
-                  }`}
-                >
-                  {value === 'en' ? 'EN' : 'বাং'}
-                </button>
-              ))}
-            </div>
           </div>
 
           <div className="my-1 border-t border-[var(--color-border)]" />

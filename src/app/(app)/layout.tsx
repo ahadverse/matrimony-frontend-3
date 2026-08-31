@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { Heart } from 'lucide-react';
 import { AuthTopNav } from '@/components/nav/AuthTopNav';
 import { AppMain } from '@/components/nav/AppMain';
@@ -5,6 +6,12 @@ import { BottomTabBar } from '@/components/nav/BottomTabBar';
 import { SiteFooter } from '@/components/footer/SiteFooter';
 import { ChatProvider } from '@/lib/chat/ChatProvider';
 import { ProfileGuard } from '@/components/profile/ProfileGuard';
+import { privateRouteMetadata } from '@/lib/seo/metadata';
+
+// Everything under this layout is behind a session and renders per-user data —
+// a crawler only ever sees a login redirect here, so the whole group is
+// excluded from the index (robots.txt disallows the same paths).
+export const metadata: Metadata = privateRouteMetadata;
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (

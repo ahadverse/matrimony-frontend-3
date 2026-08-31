@@ -154,7 +154,9 @@ const emptyForm = (): WizardForm => ({
   dob: '',
   maritalStatus: '',
   religion: '',
-  nationality: 'Bangladeshi',
+  // Left blank rather than defaulting to one nationality — members register
+  // from any country, and a pre-filled value is the one a hurried signup keeps.
+  nationality: '',
   education: '',
   educationDetails: '',
   workingSector: '',
@@ -192,9 +194,30 @@ interface StoredProgress {
   form: WizardForm;
 }
 
+/**
+ * The wizard reads `useSearchParams`, so everything inside the boundary is left
+ * out of the prerendered HTML. The fallback is therefore not a spinner: it is
+ * the heading and summary of the page, which is what a crawler (and anyone on a
+ * slow connection) sees before hydration replaces it with the form.
+ */
+function RegisterIntro() {
+  return (
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-16 text-center">
+      <h1 className="font-display text-2xl text-[var(--color-text)] sm:text-3xl">
+        Create your free Biye Kora Lagbe account
+      </h1>
+      <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-muted)]">
+        Registration takes about five minutes and costs nothing. Verify your phone number, complete your
+        biodata, and our team reviews your profile — usually within 24 hours — before it goes live to
+        verified brides and grooms around the world.
+      </p>
+    </div>
+  );
+}
+
 export default function RegisterPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RegisterIntro />}>
       <RegisterWizard />
     </Suspense>
   );
@@ -625,6 +648,7 @@ function RegisterWizard() {
 
                 <Input
                   label={t('auth.register.nationality')}
+                  placeholder="e.g. Bangladeshi, Indian, British"
                   value={form.nationality}
                   onChange={(e) => set('nationality', e.target.value)}
                 />

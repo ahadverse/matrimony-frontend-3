@@ -1,13 +1,15 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
 import en from '@/messages/en.json';
 import bn from '@/messages/bn.json';
 
 export type Locale = 'en' | 'bn';
-type Dictionary = typeof en;
 
-const dictionaries: Record<Locale, Dictionary> = { en, bn };
+// English is the reference dictionary; `t` falls back to it key by key, so bn
+// is allowed to be a subset. Typing this as `typeof en` instead would force
+// every new English string to be translated before it could even compile.
+const dictionaries: Record<Locale, unknown> = { en, bn };
 const STORAGE_KEY = 'biyekoralagbe_locale';
 
 interface LanguageContextValue {
@@ -33,12 +35,10 @@ function interpolate(template: string, vars?: Record<string, string | number>): 
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('bn');
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved === 'en' || saved === 'bn') setLocaleState(saved);
-  }, []);
+  // The app ships English-only for now and the language switchers are gone, so
+  // the locale is pinned. A visitor who saved 'bn' before would otherwise be
+  // stuck in Bangla with no UI left to switch back — hence no restore here.
+  const [locale, setLocaleState] = useState<Locale>('en');
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
