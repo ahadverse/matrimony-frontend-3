@@ -119,7 +119,8 @@ export default function RootLayout({
       className={`${fraunces.variable} ${inter.variable} ${hindSiliguri.variable} h-full antialiased`}
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }} />
+       
+          <GoogleAnalytics /> <script dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }} />
         <JsonLd data={siteGraph} />
       </head>
       <body className="min-h-full flex flex-col bg-[var(--color-bg)]">

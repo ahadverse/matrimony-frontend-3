@@ -3,8 +3,6 @@ import Script from 'next/script';
 const GA_MEASUREMENT_ID = 'G-FDYSNF174H';
 
 export function GoogleAnalytics() {
-  // Dev and local builds would otherwise pollute the property with fake traffic.
-  if (process.env.NODE_ENV !== 'production') return null;
 
   return (
     <>
