@@ -3,6 +3,7 @@ import { Fraunces, Inter, Hind_Siliguri } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
+import { MetaPixel } from "@/components/analytics/MetaPixel";
 import { JsonLd, siteGraph } from "@/components/seo/JsonLd";
 import {
   GOOGLE_SITE_VERIFICATION,
@@ -119,13 +120,16 @@ export default function RootLayout({
       className={`${fraunces.variable} ${inter.variable} ${hindSiliguri.variable} h-full antialiased`}
     >
       <head>
-       
-          <GoogleAnalytics /> <script dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }} />
+
+        <GoogleAnalytics /> 
+        <MetaPixel />
+        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }} />
         <JsonLd data={siteGraph} />
       </head>
       <body className="min-h-full flex flex-col bg-[var(--color-bg)]">
         <Providers>{children}</Providers>
         <GoogleAnalytics />
+        <MetaPixel />
       </body>
     </html>
   );
