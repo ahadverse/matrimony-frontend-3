@@ -20,7 +20,7 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
-    lang: 'en',
+    lang: 'bn',
     dir: 'ltr',
     categories: ['social', 'lifestyle'],
     background_color: '#ffffff',

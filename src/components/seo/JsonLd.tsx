@@ -81,7 +81,7 @@ export const websiteSchema = {
   url: SITE_URL,
   name: SITE_NAME,
   description: SITE_DESCRIPTION,
-  inLanguage: 'en',
+  inLanguage: 'bn',
   publisher: { '@id': ORGANIZATION_ID },
   potentialAction: {
     '@type': 'SearchAction',
@@ -190,7 +190,7 @@ export function collectionPageSchema({
     url: absoluteUrl(path),
     name,
     description,
-    inLanguage: 'en',
+    inLanguage: 'bn',
     isPartOf: { '@id': WEBSITE_ID },
     publisher: { '@id': ORGANIZATION_ID },
     mainEntity: {
@@ -218,7 +218,7 @@ export function contactPageSchema({ name, description, path }: { name: string; d
     url: absoluteUrl(path),
     name,
     description,
-    inLanguage: 'en',
+    inLanguage: 'bn',
     isPartOf: { '@id': WEBSITE_ID },
     publisher: { '@id': ORGANIZATION_ID },
     mainEntity: {
@@ -255,7 +255,7 @@ export function webPageSchema({
     url: absoluteUrl(path),
     name,
     description,
-    inLanguage: 'en',
+    inLanguage: 'bn',
     isPartOf: { '@id': WEBSITE_ID },
     publisher: { '@id': ORGANIZATION_ID },
   };

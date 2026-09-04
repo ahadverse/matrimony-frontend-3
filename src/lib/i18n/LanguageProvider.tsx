@@ -35,10 +35,10 @@ function interpolate(template: string, vars?: Record<string, string | number>): 
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  // The app ships English-only for now and the language switchers are gone, so
-  // the locale is pinned. A visitor who saved 'bn' before would otherwise be
-  // stuck in Bangla with no UI left to switch back — hence no restore here.
-  const [locale, setLocaleState] = useState<Locale>('en');
+  // The language switchers are gone, so the locale is pinned to Bangla. `t`
+  // still falls back to the English dictionary key by key, so any string bn.json
+  // has not translated yet renders in English rather than as a raw key.
+  const [locale, setLocaleState] = useState<Locale>('bn');
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);

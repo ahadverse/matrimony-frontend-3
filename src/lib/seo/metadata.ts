@@ -96,7 +96,7 @@ export function pageMetadata({
       siteName: SITE_NAME,
       title,
       description,
-      locale: 'en_US',
+      locale: 'bn_BD',
       images: [OG_IMAGE],
     },
     twitter: {

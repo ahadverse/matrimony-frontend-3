@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     title: `${SITE_NAME} — ${SITE_TAGLINE}`,
     description: SITE_DESCRIPTION,
     url: SITE_URL,
-    locale: "en_US",
+    locale: "bn_BD",
   },
   twitter: {
     card: "summary_large_image",
@@ -116,7 +116,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="bn"
       className={`${fraunces.variable} ${inter.variable} ${hindSiliguri.variable} h-full antialiased`}
     >
       <head>
