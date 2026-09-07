@@ -25,7 +25,8 @@
     "keepTypingToNarrow": "{count} more — keep typing to narrow",
     "imageSizeHint": "JPG or PNG, up to {size}MB",
     "imageTooLarge": "That image is over {size}MB — please choose a smaller photo.",
-    "imageInvalidType": "Please choose an image file (JPG or PNG)."
+    "imageInvalidType": "Please choose an image file (JPG or PNG).",
+    "selectPlaceholder": "--- Please select ---"
   },
   "dashboard": {
     "welcomeEyebrow": "Welcome back",
@@ -454,7 +455,11 @@
     "story6Meta": "Sydney",
     "ctaTitle": "Your story could be next",
     "ctaBody": "Join the verified members around the world who found their match on Biye Kora Lagbe.",
-    "ctaButton": "Create your free profile"
+    "ctaButton": "Create your free profile",
+    "shareEyebrow": "Share your story",
+    "shareTitle": "Did you find your match on Biye Kora Lagbe?",
+    "shareBody": "We would love to share your story. Names are always changed. Your story could give hope to someone still searching.",
+    "shareButton": "Share your story"
   },
   "faqPage": {
     "heroEyebrow": "Questions",
@@ -688,7 +693,27 @@
       "aboutPlaceholder": "Please write here",
       "completeRegistration": "Complete my registration",
       "stepRequired": "Please fill in every required field before continuing.",
-      "saveError": "Could not save this step. Please try again."
+      "saveError": "Could not save this step. Please try again.",
+      "stepAccountSection": "Your account",
+      "accountError": "Could not create your account",
+      "avatarLabel": "Add your photo",
+      "avatarHint": "A clear face photo. Profiles with a photo get far more responses.",
+      "avatarChange": "Change photo",
+      "avatarRemove": "Remove",
+      "avatarUploadFailed": "We saved your details, but that photo could not be uploaded. You can add one from your profile.",
+      "phoneLabel": "Mobile number",
+      "phoneHint": "Pick your country, then type the number without the country code.",
+      "phoneCountry": "Country",
+      "phoneCountrySearch": "Search country",
+      "completePromptTitle": "Finish your profile for a better impression",
+      "completePromptBody": "You have given us the essentials. Profiles that add education, lifestyle and family details get noticeably more interest — and you can fill them in whenever it suits you.",
+      "completePromptCta": "Complete my profile",
+      "selectHeight": "--- Select your height ---",
+      "namePlaceholder": "e.g. Ziaul Haque",
+      "passwordPlaceholder": "At least 8 characters",
+      "heightFormat": "{feet} feet {inches} inch",
+      "introTitle": "Create your free Biye Kora Lagbe account",
+      "introBody": "Signing up takes about two minutes and costs nothing. Three short screens and your profile is live for our team to review — usually within 24 hours — before verified brides and grooms around the world can find it."
     }
   },
   "browse": {
@@ -937,7 +962,8 @@
     "smokeLightSocial": "Light / Social smoker",
     "lockedNotice": "Name, phone, email, full address and messaging stay hidden until you unlock this profile.",
     "lockedHiddenName": "Name hidden",
-    "unlockedBadge": "Unlocked"
+    "unlockedBadge": "Unlocked",
+    "heightFormat": "{feet} feet {inches} inch"
   },
   "editProfile": {
     "title": "Edit Profile",
@@ -1235,5 +1261,51 @@
     "privacyS8Body": "Passwords are stored hashed, never in plain text. Access to member data is restricted to the staff who review profiles and answer support. No system is perfectly secure, so please choose a strong password and never share it.",
     "privacyS9Title": "9. Contact",
     "privacyS9Body": "For any privacy question, or to ask us to correct or delete your information, write to biyekoralagbe@gmail.com or use the contact page."
+  },
+  "profileOptions": {
+    "ssc": "SSC",
+    "hsc": "HSC / A-Level",
+    "diploma": "Diploma",
+    "undergraduate": "Undergraduate",
+    "bachelors": "Bachelors",
+    "masters": "Masters",
+    "mbbs": "MBBS / BDS",
+    "fcps": "FCPS / MD",
+    "doctorate": "Doctorate / PhD / MPhil",
+    "professionalDegree": "Professional Degree",
+    "others": "Others",
+    "privateCompany": "Private Company",
+    "governmentSector": "Government / Public Sector",
+    "defenceServices": "Defense / Civil Services",
+    "selfEmployed": "Business / Self Employed",
+    "notWorking": "Not Working",
+    "accountingBanking": "Accounting & Banking",
+    "adminHr": "Administration & HR",
+    "advertisingMedia": "Advertising & Media",
+    "agriculture": "Agriculture",
+    "airlineAviation": "Airline & Aviation",
+    "architectureDesign": "Architecture & Design",
+    "artistsAnimators": "Artists & Animators",
+    "beautyFashion": "Beauty & Fashion",
+    "defence": "Defense",
+    "educationTraining": "Education & Training",
+    "engineering": "Engineering",
+    "itSoftware": "IT & Software Engineering",
+    "legal": "Legal",
+    "medicalHealthcare": "Medical & Healthcare",
+    "salesMarketing": "Sales & Marketing",
+    "businessOthers": "Business & Others",
+    "student": "Student",
+    "islam": "Islam",
+    "hinduism": "Hinduism",
+    "christianity": "Christianity",
+    "buddhism": "Buddhism",
+    "veryReligious": "Very religious",
+    "averageReligious": "Average religious",
+    "notReligious": "Not religious",
+    "bodyAverage": "Average",
+    "bodySlim": "Slim",
+    "bodyAthletic": "Athletic",
+    "bodyHeavy": "Heavy"
   }
 }

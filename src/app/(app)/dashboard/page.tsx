@@ -5,6 +5,7 @@ import { BadgeCheck, Gamepad2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { CompletionPanel } from '@/components/profile/CompletionPanel';
+import { CompletionPrompt } from '@/components/profile/CompletionPrompt';
 import { WelcomeBanner } from '@/components/dashboard/WelcomeBanner';
 import { StatTilesRow } from '@/components/dashboard/StatTilesRow';
 import { VerificationPromptCard } from '@/components/dashboard/VerificationPromptCard';
@@ -30,6 +31,8 @@ export default function DashboardPage() {
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="flex flex-col gap-6 lg:col-span-2">
         <WelcomeBanner name={profile?.name?.split(' ')[0] ?? ''} />
+
+        {profile && <CompletionPrompt percent={profile.completionPercent} />}
 
         <VerificationPromptCard />
 

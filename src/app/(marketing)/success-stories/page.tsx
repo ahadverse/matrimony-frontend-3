@@ -147,15 +147,14 @@ export default function SuccessStoriesPage() {
 
       <section className="gradient-primary px-6 py-16 text-center text-[var(--color-on-primary)]">
         <FadeIn className="mx-auto max-w-xl">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-on-primary)]/70">Share your story</span>
-          <h2 className="font-display mt-3 text-2xl sm:text-3xl">Did you find your match on Biye Kora Lagbe?</h2>
-          <p className="mt-3 text-[var(--color-on-primary)]/85">
-            We would love to share your story. Names are always changed. Your story could give hope to someone still
-            searching.
-          </p>
+          <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-on-primary)]/70">
+            {t('storiesPage.shareEyebrow')}
+          </span>
+          <h2 className="font-display mt-3 text-2xl sm:text-3xl">{t('storiesPage.shareTitle')}</h2>
+          <p className="mt-3 text-[var(--color-on-primary)]/85">{t('storiesPage.shareBody')}</p>
           <Link href="/faq" className="mt-6 inline-block">
             <Button size="lg" className="!bg-white !bg-none !text-[var(--color-primary-accent)]">
-              Share your story →
+              {t('storiesPage.shareButton')} →
             </Button>
           </Link>
         </FadeIn>

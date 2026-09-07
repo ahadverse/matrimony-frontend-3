@@ -30,9 +30,18 @@ function goTo(path: string) {
 }
 
 /**
- * Reused by both the register wizard's first screen and the login page —
- * full navigations (not fetches), since Google/Facebook's consent screen
- * needs a real browser redirect.
+ * Not mounted anywhere at the moment: Google and Facebook sign-in were taken
+ * off the login and register screens so every new account is created with an
+ * email and a password.
+ *
+ * The component is kept, and so are the backend's `/auth/google` and
+ * `/auth/facebook` routes and their Passport strategies — members who signed up
+ * through a provider before this change have no password and would be locked
+ * out entirely if the routes went away. Rendering this again on either screen is
+ * all that is needed to turn the feature back on.
+ *
+ * Full navigations (not fetches), since the consent screen needs a real browser
+ * redirect.
  */
 export function SocialLoginButtons() {
   const { t } = useLanguage();

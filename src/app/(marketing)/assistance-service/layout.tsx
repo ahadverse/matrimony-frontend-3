@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import en from '@/messages/en.json';
+import { dict as en } from '@/lib/i18n/server-dict';
 import { MarketingPageSeo } from '@/components/seo/MarketingPageSeo';
 import { JsonLd, faqSchema, serviceSchema } from '@/components/seo/JsonLd';
 import { pageMetadata } from '@/lib/seo/metadata';

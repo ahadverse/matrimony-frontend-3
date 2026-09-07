@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useId, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import clsx from 'clsx';
+import { useLanguage } from '@/lib/i18n/LanguageProvider';
 
 type Size = 'sm' | 'md' | 'lg';
 
@@ -22,6 +23,7 @@ const sizeClasses: Record<Size, string> = {
 };
 
 export function Modal({ open, onClose, title, size = 'md', children }: ModalProps) {
+  const { t } = useLanguage();
   const titleId = useId();
 
   // Escape to close, and lock body scroll so the page behind a bottom sheet
@@ -73,7 +75,7 @@ export function Modal({ open, onClose, title, size = 'md', children }: ModalProp
               <button
                 onClick={onClose}
                 className="ml-auto flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]"
-                aria-label="Close"
+                aria-label={t('common.close')}
               >
                 <X size={18} />
               </button>

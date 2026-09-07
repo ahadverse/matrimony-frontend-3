@@ -28,7 +28,8 @@ import { ApiError } from '@/lib/api-client';
 import { EMPTY_LOCATION, type ProfileLocation } from '@/lib/geo';
 import type { BrowseCard } from '@/lib/types';
 
-const MIN_BROWSE_COMPLETION_PERCENT = 80;
+/** Must match `MIN_BROWSE_COMPLETION_PERCENT` in the API's `common/utils/profile-completion.ts` — the server enforces it, this only decides whether to show the gate instead of the deck. */
+const MIN_BROWSE_COMPLETION_PERCENT = 40;
 // Once fewer than this many cards remain, quietly top the deck back up —
 // the backend excludes already-swiped ids server-side, so a plain refetch()
 // is the refill; there's no cursor/page to track.

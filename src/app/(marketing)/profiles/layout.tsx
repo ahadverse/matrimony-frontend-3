@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import en from '@/messages/en.json';
+import { dict as en } from '@/lib/i18n/server-dict';
 import { MarketingPageSeo } from '@/components/seo/MarketingPageSeo';
 import { collectionPageSchema } from '@/components/seo/JsonLd';
 import { pageMetadata } from '@/lib/seo/metadata';

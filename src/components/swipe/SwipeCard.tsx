@@ -6,7 +6,7 @@ import { BadgeCheck, Briefcase, GraduationCap, Heart, MapPin, Ruler } from 'luci
 import type { BrowseCard } from '@/lib/types';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { resolveUploadUrl } from '@/lib/api-client';
-import { formatHeight } from '@/lib/height';
+import { useFormatHeight } from '@/lib/useFormatHeight';
 import { formatLocation } from '@/lib/geo';
 import { useSwipeGesture, type SwipeAction } from './useSwipeGesture';
 import { SwipeStamp } from './SwipeStamp';
@@ -46,6 +46,7 @@ const CARD_VARIANTS: Variants = {
 
 export function SwipeCard({ card, isTop, stackIndex, onSwipe }: SwipeCardProps) {
   const { t } = useLanguage();
+  const formatHeight = useFormatHeight();
   const [imgError, setImgError] = useState(false);
   const resolvedPhotoUrl = resolveUploadUrl(card.photoUrl);
 

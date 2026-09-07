@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ApiError, resolveUploadUrl } from '@/lib/api-client';
 import { useIsSignedIn } from '@/lib/auth-token';
-import { formatHeight } from '@/lib/height';
+import { useFormatHeight } from '@/lib/useFormatHeight';
+import { useOptionLabel } from '@/lib/profileOptionLabels';
 import { formatLocation } from '@/lib/geo';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { useConversations, useStartConversation, useSwipeMutation } from '@/lib/queries';
@@ -33,16 +34,18 @@ interface PublicProfileRowProps {
  */
 export function PublicProfileRow({ profile, unlockCost, onUnlock, unlocking }: PublicProfileRowProps) {
   const { t } = useLanguage();
+  const formatHeight = useFormatHeight();
+  const optionLabel = useOptionLabel();
   const photo = resolveUploadUrl(profile.photoUrl);
   const heading = profile.name ?? profile.publicId ?? t('profileDetail.lockedHiddenName');
 
   const stats: [string, string | null][] = [
     [t('profiles.age'), profile.age ? `${profile.age} ${t('common.years')}` : null],
     [t('profiles.height'), formatHeight(profile.heightCm)],
-    [t('profiles.religion'), profile.religion],
+    [t('profiles.religion'), optionLabel(profile.religion)],
     [t('profiles.maritalStatus'), t(`profileDetail.${profile.maritalStatus}`)],
-    [t('profiles.education'), profile.education],
-    [t('profiles.workingSector'), profile.workingSector ?? t('profiles.notWorking')],
+    [t('profiles.education'), optionLabel(profile.education)],
+    [t('profiles.workingSector'), profile.workingSector ? optionLabel(profile.workingSector) : t('profiles.notWorking')],
   ];
 
   return (

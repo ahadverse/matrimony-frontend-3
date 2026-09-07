@@ -1,4 +1,4 @@
-import en from '@/messages/en.json';
+import { dict as en } from '@/lib/i18n/server-dict';
 
 /**
  * Persisted on the lead as `plan` — these strings must stay identical to the

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import en from '@/messages/en.json';
+import { dict as en } from '@/lib/i18n/server-dict';
 import { LandingPage } from '@/components/marketing/LandingPage';
 import { JsonLd, faqSchema, webPageSchema } from '@/components/seo/JsonLd';
 import { pageMetadata } from '@/lib/seo/metadata';

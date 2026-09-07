@@ -79,11 +79,20 @@
   --color-bg: #120c10;
   --color-surface: #1b1216;
   --color-surface-raised: #241a1f;
-  --color-border: #3a2a30;
+  /* Raised from #3a2a30 (1.25:1 against a raised surface). At that value an
+     input's edge was all but invisible on a dark screen, so a form read as
+     floating text rather than as fields. */
+  --color-border: #4b3740;
 
+  /* Contrast against the three dark grounds above, lowest first (raised):
+     text 14.9:1, muted 9.8:1, faint 5.7:1 — all clear of the 4.5:1 AA floor.
+     `faint` in particular used to be #8b6f78, which measured 3.7:1 and is what
+     made every hint, placeholder and helper line hard to read here. Check any
+     replacement against --color-surface-raised, not --color-bg: it is the
+     lightest ground and therefore the worst case. */
   --color-text: #f7efe9;
-  --color-text-muted: #c3a8ae;
-  --color-text-faint: #8b6f78;
+  --color-text-muted: #d5c0c5;
+  --color-text-faint: #a89098;
 
   /* NOTE: the primary ramp inverts in perceived lightness here, on purpose.
      --color-primary-dark is a gradient deep end, and --color-primary-accent is

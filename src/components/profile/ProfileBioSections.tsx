@@ -27,7 +27,8 @@ import {
   Wallet,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
-import { formatHeight } from '@/lib/height';
+import { useFormatHeight } from '@/lib/useFormatHeight';
+import { useOptionLabel } from '@/lib/profileOptionLabels';
 import { formatLocationFull } from '@/lib/geo';
 import { enumKey } from '@/lib/profileOptions';
 import type { LockedProfile, UnlockedProfile } from '@/lib/types';
@@ -57,6 +58,8 @@ interface Section {
  */
 export function ProfileBioSections({ profile }: { profile: LockedProfile | UnlockedProfile }) {
   const { t } = useLanguage();
+  const formatHeight = useFormatHeight();
+  const optionLabel = useOptionLabel();
 
   const optional = (value: string | number | null | undefined): string | null =>
     value === null || value === undefined || value === '' ? null : String(value);
@@ -76,7 +79,7 @@ export function ProfileBioSections({ profile }: { profile: LockedProfile | Unloc
         },
         { icon: Baby, label: t('editProfile.age'), value: optional(profile.age) },
         { icon: Heart, label: t('profileDetail.maritalStatus'), value: t(`profileDetail.${profile.maritalStatus}`) },
-        { icon: Heart, label: t('profileDetail.religion'), value: optional(profile.religion) },
+        { icon: Heart, label: t('profileDetail.religion'), value: optional(optionLabel(profile.religion)) },
         { icon: Flag, label: t('profileDetail.nationality'), value: optional(profile.nationality) },
         {
           icon: Users,
@@ -96,10 +99,10 @@ export function ProfileBioSections({ profile }: { profile: LockedProfile | Unloc
       key: 'education',
       title: t('profileDetail.sectionEducation'),
       fields: [
-        { icon: GraduationCap, label: t('profileDetail.education'), value: optional(profile.education) },
+        { icon: GraduationCap, label: t('profileDetail.education'), value: optional(optionLabel(profile.education)) },
         { icon: School, label: t('editProfile.collegeUniversity'), value: optional(profile.collegeUniversity) },
-        { icon: BriefcaseBusiness, label: t('profileDetail.profession'), value: optional(profile.profession) },
-        { icon: BriefcaseBusiness, label: t('profileDetail.workingSector'), value: optional(profile.workingSector) },
+        { icon: BriefcaseBusiness, label: t('profileDetail.profession'), value: optional(optionLabel(profile.profession)) },
+        { icon: BriefcaseBusiness, label: t('profileDetail.workingSector'), value: optional(optionLabel(profile.workingSector)) },
         { icon: Building2, label: t('profileDetail.company'), value: optional(profile.companyName) },
         {
           icon: Wallet,
@@ -177,7 +180,7 @@ export function ProfileBioSections({ profile }: { profile: LockedProfile | Unloc
       fields: [
         { icon: Ruler, label: t('profileDetail.height'), value: formatHeight(profile.heightCm) },
         { icon: Scale, label: t('profileDetail.weight'), value: optional(profile.weightKg && `${profile.weightKg} kg`) },
-        { icon: PersonStanding, label: t('editProfile.bodyType'), value: optional(profile.bodyType) },
+        { icon: PersonStanding, label: t('editProfile.bodyType'), value: optional(optionLabel(profile.bodyType)) },
         {
           icon: Droplet,
           label: t('profileDetail.complexion'),
@@ -191,7 +194,7 @@ export function ProfileBioSections({ profile }: { profile: LockedProfile | Unloc
       key: 'lifestyle',
       title: t('profileDetail.sectionLifestyle'),
       fields: [
-        { icon: Heart, label: t('profileDetail.religiousValue'), value: optional(profile.religiousValue) },
+        { icon: Heart, label: t('profileDetail.religiousValue'), value: optional(optionLabel(profile.religiousValue)) },
         {
           icon: HeartHandshake,
           label: t('profileDetail.familyValues'),
