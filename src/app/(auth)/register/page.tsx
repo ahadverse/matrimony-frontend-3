@@ -145,15 +145,21 @@ interface StoredProgress {
 function RegisterIntro() {
   const { t } = useLanguage();
 
+  // Rendered inside the same shell the wizard uses, backdrop included: the
+  // prerendered HTML and the hydrated form then share a background, so the
+  // photography is already painted when the form swaps in rather than fading
+  // up a beat later.
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-16 text-center">
-      <h1 className="font-display text-2xl text-[var(--color-text)] sm:text-3xl">
-        {t('auth.register.introTitle')}
-      </h1>
-      <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-muted)]">
-        {t('auth.register.introBody')}
-      </p>
-    </div>
+    <AuthShell backdrop>
+      <div className="text-center">
+        <h1 className="font-display text-2xl text-[var(--color-text)] sm:text-3xl">
+          {t('auth.register.introTitle')}
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-muted)]">
+          {t('auth.register.introBody')}
+        </p>
+      </div>
+    </AuthShell>
   );
 }
 
@@ -359,7 +365,7 @@ function RegisterWizard() {
   const needsGenderHere = step === 'basic' && !form.gender;
 
   return (
-    <AuthShell wide={step !== 'done'}>
+    <AuthShell wide={step !== 'done'} backdrop>
       <AnimatePresence mode="wait">
         <motion.div
           key={step}

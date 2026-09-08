@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
@@ -12,7 +12,16 @@ import { RangeSlider } from '@/components/ui/RangeSlider';
 import { Select } from '@/components/ui/Select';
 import { LocationPicker } from '@/components/ui/LocationPicker';
 import { PublicProfileRow } from '@/components/profile/PublicProfileRow';
-import { usePublicProfiles, useUnlockProfile, useWallet, type PublicProfileFilters } from '@/lib/queries';
+import { PublicProfileRowSkeleton } from '@/components/profile/PublicProfileRowSkeleton';
+import { ProfilesPageSkeleton } from '@/components/profile/ProfilesPageSkeleton';
+import { SkeletonGroup } from '@/components/ui/Skeleton';
+import {
+  usePrefetchPublicProfiles,
+  usePublicProfiles,
+  useUnlockProfile,
+  useWallet,
+  type PublicProfileFilters,
+} from '@/lib/queries';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { ApiError } from '@/lib/api-client';
 import { useIsSignedIn } from '@/lib/auth-token';
@@ -70,7 +79,11 @@ function filtersFromSearchParams(params: URLSearchParams): PublicProfileFilters 
 export default function PublicProfilesPage() {
   const { t } = useLanguage();
   return (
-    <Suspense fallback={<div className="pt-24 text-center text-[var(--color-text-muted)]">{t('common.loading')}</div>}>
+    // The fallback is the same skeleton the list itself uses, so the
+    // useSearchParams bailout is invisible: the reader sees one shape that
+    // fills in, not a "Loading…" line that is then replaced by skeletons and
+    // replaced again by rows.
+    <Suspense fallback={<ProfilesPageSkeleton label={t('common.loading')} />}>
       <PublicProfilesContent />
     </Suspense>
   );
@@ -96,7 +109,11 @@ function PublicProfilesContent() {
     [filters, signedIn],
   );
 
-  const { data, isLoading, isError, refetch } = usePublicProfiles(effectiveFilters, page);
+  const { data, isPending, isPlaceholderData, isFetching, isError, refetch } = usePublicProfiles(
+    effectiveFilters,
+    page,
+  );
+  const prefetchProfiles = usePrefetchPublicProfiles();
   // Only worth asking once there is a wallet to spend from — an anonymous
   // visitor sees the bare "Unlock" label and is sent to login on click.
   const { data: wallet } = useWallet(signedIn);
@@ -155,6 +172,19 @@ function PublicProfilesContent() {
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
   const unlockCost = wallet ? `${t('common.taka')}${wallet.profileViewCost}` : null;
 
+  // Only the very first load has nothing to show. Every later fetch is a
+  // transition from one real result set to another, so the list stays put and
+  // is dimmed instead of being torn down.
+  const showSkeletons = isPending;
+  const isTransitioning = isPlaceholderData || (isFetching && !isPending);
+
+  // Warm the next page once this one has settled — paging forward is how a
+  // directory is read, so it is the one request worth spending idle time on.
+  useEffect(() => {
+    if (isPlaceholderData || page >= totalPages) return;
+    prefetchProfiles(effectiveFilters, page + 1);
+  }, [effectiveFilters, isPlaceholderData, page, totalPages, prefetchProfiles]);
+
   return (
     // The heading and intro copy are rendered by this route's server layout, so
     // they survive the Suspense bailout this component's useSearchParams forces.
@@ -166,8 +196,21 @@ function PublicProfilesContent() {
 
         <div>
           <div className="mb-4 flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-[var(--color-text)]">
-              {isLoading ? t('common.loading') : total === 1 ? t('profiles.foundOne') : t('profiles.found', { count: total })}
+            {/* The count keeps its own line height while loading so the row of
+                controls beneath it never shifts as results arrive. */}
+            <p
+              className={`text-sm font-medium text-[var(--color-text)] transition-opacity ${
+                isTransitioning ? 'opacity-50' : ''
+              }`}
+              aria-live="polite"
+            >
+              {showSkeletons ? (
+                <span className="inline-block h-4 w-32 animate-pulse rounded bg-[var(--color-surface-raised)] align-middle motion-reduce:animate-none" />
+              ) : total === 1 ? (
+                t('profiles.foundOne')
+              ) : (
+                t('profiles.found', { count: total })
+              )}
             </p>
             <button
               onClick={() => setFilterModalOpen(true)}
@@ -182,12 +225,12 @@ function PublicProfilesContent() {
             </button>
           </div>
 
-          {isLoading ? (
-            <div className="flex flex-col gap-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i} className="h-44 animate-pulse bg-[var(--color-surface)]" />
+          {showSkeletons ? (
+            <SkeletonGroup label={t('common.loading')} className="flex flex-col gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <PublicProfileRowSkeleton key={i} />
               ))}
-            </div>
+            </SkeletonGroup>
           ) : isError ? (
             <Card className="flex flex-col items-center gap-3 p-10 text-center">
               <p className="text-sm text-[var(--color-text-muted)]">{t('profiles.loadError')}</p>
@@ -205,7 +248,16 @@ function PublicProfilesContent() {
               )}
             </Card>
           ) : (
-            <div className="flex flex-col gap-4">
+            // Dimmed and inert while the next page loads: the rows stay exactly
+            // where they are, so the page never collapses to zero height and
+            // yanks the scroll position with it. `pointer-events-none` stops a
+            // reader unlocking a row that is about to be replaced.
+            <div
+              aria-busy={isTransitioning}
+              className={`flex flex-col gap-4 transition-opacity duration-200 ${
+                isTransitioning ? 'pointer-events-none opacity-50' : 'opacity-100'
+              }`}
+            >
               {items.map((profile) => (
                 <PublicProfileRow
                   key={profile.userId}
@@ -218,7 +270,15 @@ function PublicProfilesContent() {
             </div>
           )}
 
-          {totalPages > 1 && <Pagination page={page} totalPages={totalPages} onChange={setPage} />}
+          {totalPages > 1 && (
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              onChange={setPage}
+              busy={isTransitioning}
+              onPrefetch={(target) => prefetchProfiles(effectiveFilters, target)}
+            />
+          )}
         </div>
       </div>
 
@@ -478,10 +538,16 @@ function Pagination({
   page,
   totalPages,
   onChange,
+  busy,
+  onPrefetch,
 }: {
   page: number;
   totalPages: number;
   onChange: (page: number) => void;
+  /** True while the next page is in flight — the controls lock to stop a queue of clicks. */
+  busy?: boolean;
+  /** Warms a page the pointer is heading for, before the click lands. */
+  onPrefetch?: (page: number) => void;
 }) {
   const { t } = useLanguage();
 
@@ -491,8 +557,18 @@ function Pagination({
   const numbers = Array.from({ length: Math.min(5, totalPages) }, (_, i) => start + i);
 
   function go(next: number) {
-    onChange(Math.max(1, Math.min(totalPages, next)));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const target = Math.max(1, Math.min(totalPages, next));
+    if (target === page) return;
+    onChange(target);
+    // `auto`, not `smooth`: the rows above are being replaced at the same time,
+    // and a smooth scroll racing that swap is what makes the jump feel loose.
+    // Reduced-motion readers get no animated scroll either way.
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  /** Hovering or focusing a control is the earliest reliable signal of intent. */
+  function warm(target: number) {
+    if (target >= 1 && target <= totalPages && target !== page) onPrefetch?.(target);
   }
 
   const stepClasses =
@@ -500,10 +576,16 @@ function Pagination({
 
   return (
     <nav className="mt-6 flex flex-wrap items-center justify-center gap-1.5" aria-label={t('profiles.title')}>
-      <button className={stepClasses} onClick={() => go(1)} disabled={page === 1}>
+      <button className={stepClasses} onClick={() => go(1)} disabled={page === 1 || busy}>
         {t('profiles.first')}
       </button>
-      <button className={stepClasses} onClick={() => go(page - 1)} disabled={page === 1}>
+      <button
+        className={stepClasses}
+        onClick={() => go(page - 1)}
+        onMouseEnter={() => warm(page - 1)}
+        onFocus={() => warm(page - 1)}
+        disabled={page === 1 || busy}
+      >
         {t('profiles.previous')}
       </button>
 
@@ -511,8 +593,11 @@ function Pagination({
         <button
           key={n}
           onClick={() => go(n)}
+          onMouseEnter={() => warm(n)}
+          onFocus={() => warm(n)}
+          disabled={busy && n !== page}
           aria-current={n === page ? 'page' : undefined}
-          className={`h-8 w-8 rounded-lg text-xs font-semibold transition-colors ${
+          className={`h-8 w-8 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 ${
             n === page
               ? 'gradient-primary text-[var(--color-on-primary)]'
               : 'border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]'
@@ -522,10 +607,20 @@ function Pagination({
         </button>
       ))}
 
-      <button className={stepClasses} onClick={() => go(page + 1)} disabled={page === totalPages}>
+      <button
+        className={stepClasses}
+        onClick={() => go(page + 1)}
+        onMouseEnter={() => warm(page + 1)}
+        onFocus={() => warm(page + 1)}
+        disabled={page === totalPages || busy}
+      >
         {t('profiles.next')}
       </button>
-      <button className={stepClasses} onClick={() => go(totalPages)} disabled={page === totalPages}>
+      <button
+        className={stepClasses}
+        onClick={() => go(totalPages)}
+        disabled={page === totalPages || busy}
+      >
         {t('profiles.last')}
       </button>
     </nav>

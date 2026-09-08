@@ -6,9 +6,11 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
 import { Menu, X } from 'lucide-react';
+import { AvatarMenu } from './AvatarMenu';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
+import { useIsSignedIn } from '@/lib/auth-token';
 
 /**
  * Every indexable marketing route is reachable from here. /features,
@@ -30,6 +32,10 @@ export function TopNav() {
   const { t } = useLanguage();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  // The marketing pages are open to everyone, so this nav has to serve both
+  // states: a signed-in member reaching /faq or /profiles from a link was
+  // previously still being asked to sign in and register.
+  const signedIn = useIsSignedIn();
 
   // Same rule the signed-in nav (AuthTopNav) uses, so both navs agree on what
   // "current page" means: exact match, or a nested route under the link.
@@ -78,18 +84,31 @@ export function TopNav() {
         </div>
 
         <div className="flex items-center gap-2">
-          <ThemeToggle />
-          {/* Two separate actions. There was one button labelled
-              "Sign/Register" that went only to /login, so the primary
-              conversion path — registering — had no header entry at all. */}
-          <Link href="/login" className="hidden sm:block">
-            <Button variant="secondary" size="md">
-              {t('landing.ctaSecondary')}
-            </Button>
-          </Link>
-          <Link href="/register" className="hidden sm:block">
-            <Button size="md">{t('landing.ctaJoin')}</Button>
-          </Link>
+          {signedIn ? (
+            <>
+              {/* No standalone ThemeToggle here: AvatarMenu carries its own, and
+                  rendering both would put two theme switches side by side. */}
+              <Link href="/dashboard" className="hidden sm:block">
+                <Button size="md">{t('nav.dashboard')}</Button>
+              </Link>
+              <AvatarMenu />
+            </>
+          ) : (
+            <>
+              <ThemeToggle />
+              {/* Two separate actions. There was one button labelled
+                  "Sign/Register" that went only to /login, so the primary
+                  conversion path — registering — had no header entry at all. */}
+              <Link href="/login" className="hidden sm:block">
+                <Button variant="secondary" size="md">
+                  {t('landing.ctaSecondary')}
+                </Button>
+              </Link>
+              <Link href="/register" className="hidden sm:block">
+                <Button size="md">{t('landing.ctaJoin')}</Button>
+              </Link>
+            </>
+          )}
           <button
             type="button"
             onClick={() => setMobileOpen((v) => !v)}
@@ -125,16 +144,26 @@ export function TopNav() {
               );
             })}
             <div className="mt-2 flex flex-col gap-2 sm:hidden">
-              <Link href="/register" onClick={() => setMobileOpen(false)}>
-                <Button size="md" className="w-full">
-                  {t('landing.ctaJoin')}
-                </Button>
-              </Link>
-              <Link href="/login" onClick={() => setMobileOpen(false)}>
-                <Button variant="secondary" size="md" className="w-full">
-                  {t('landing.ctaSecondary')}
-                </Button>
-              </Link>
+              {signedIn ? (
+                <Link href="/dashboard" onClick={() => setMobileOpen(false)}>
+                  <Button size="md" className="w-full">
+                    {t('nav.dashboard')}
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/register" onClick={() => setMobileOpen(false)}>
+                    <Button size="md" className="w-full">
+                      {t('landing.ctaJoin')}
+                    </Button>
+                  </Link>
+                  <Link href="/login" onClick={() => setMobileOpen(false)}>
+                    <Button variant="secondary" size="md" className="w-full">
+                      {t('landing.ctaSecondary')}
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

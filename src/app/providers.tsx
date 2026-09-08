@@ -11,7 +11,25 @@ export function Providers({ children }: { children: ReactNode }) {
     () =>
       new QueryClient({
         defaultOptions: {
-          queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 15_000 },
+          queries: {
+            retry: 1,
+            refetchOnWindowFocus: false,
+            staleTime: 15_000,
+            // Navigating away and back within five minutes now paints from
+            // cache immediately and revalidates behind the scenes, instead of
+            // re-fetching from empty. The default gcTime is 5 minutes, which
+            // meant a cached page was often already evicted by the time a
+            // reader returned to it.
+            gcTime: 30 * 60_000,
+            // A `staleTime` hit still repaints instantly from cache; without
+            // this, a reader who briefly loses signal keeps stale data with no
+            // attempt to catch up once they are back.
+            refetchOnReconnect: true,
+            // Re-running a request that failed because the tab was offline is
+            // pointless — react-query retries it on reconnect instead.
+            networkMode: 'offlineFirst',
+          },
+          mutations: { networkMode: 'offlineFirst' },
         },
       }),
   );

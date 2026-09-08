@@ -1,6 +1,13 @@
 'use client';
 
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { api } from './api-client';
 import type { GeoCountry, GeoState } from './geo';
 import type {
@@ -120,6 +127,10 @@ export function useBrowseFeedInfinite(filters: BrowseFilters = {}, enabled = tru
       lastPage.page * lastPage.pageSize < lastPage.total ? lastPage.page + 1 : undefined,
     enabled,
     staleTime: 30_000,
+    // Changing a filter would otherwise tear down every loaded page at once and
+    // drop the grid to skeletons; this holds the previous results in place until
+    // the first page of the new filter arrives.
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -149,9 +160,9 @@ export interface PublicProfileFilters {
  * logging out clears the whole cache (see AvatarMenu), so one account's
  * unlocked names can't be served to the next.
  */
-export function usePublicProfiles(filters: PublicProfileFilters, page: number) {
-  return useQuery({
-    queryKey: ['public-profiles', filters, page],
+function publicProfilesQuery(filters: PublicProfileFilters, page: number) {
+  return {
+    queryKey: ['public-profiles', filters, page] as const,
     queryFn: () => {
       const params = new URLSearchParams();
       for (const [key, value] of Object.entries(filters)) {
@@ -161,7 +172,34 @@ export function usePublicProfiles(filters: PublicProfileFilters, page: number) {
       return api.get<PublicProfilesPage>(`profiles/public?${params.toString()}`);
     },
     staleTime: 30_000,
+  };
+}
+
+export function usePublicProfiles(filters: PublicProfileFilters, page: number) {
+  return useQuery({
+    ...publicProfilesQuery(filters, page),
+    // Turning a page or applying a filter keeps the current results on screen
+    // while the next set loads, instead of unmounting the list and dropping the
+    // reader back to skeletons. `isPlaceholderData` tells the page to dim what
+    // is showing rather than replace it.
+    placeholderData: keepPreviousData,
   });
+}
+
+/**
+ * Warms the next page so it is already cached by the time the reader asks for
+ * it. Called on hover/focus of the "next" control and once the current page has
+ * settled — a directory is read by paging forward, so the next page is the one
+ * request worth spending idle time on.
+ */
+export function usePrefetchPublicProfiles() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (filters: PublicProfileFilters, page: number) => {
+      void queryClient.prefetchQuery(publicProfilesQuery(filters, page));
+    },
+    [queryClient],
+  );
 }
 
 export interface FilteredCard extends LocationFields {
@@ -410,6 +448,8 @@ export function useWalletTransactions(params: { pageSize?: number; type?: Wallet
       if (type) query.set('type', type);
       return api.get<TransactionsPage>(`wallet/transactions?${query.toString()}`);
     },
+    // Switching the type tab keeps the current rows until the new ones arrive.
+    placeholderData: keepPreviousData,
   });
 }
 

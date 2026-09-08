@@ -52,8 +52,17 @@ export function PublicProfileRow({ profile, unlockCost, onUnlock, unlocking }: P
     <Card className="flex flex-col gap-4 overflow-hidden p-4 sm:flex-row">
       <div className="relative aspect-[4/5] w-full shrink-0 overflow-hidden rounded-xl bg-[var(--color-surface)] sm:h-44 sm:w-36">
         {photo ? (
+          // The wrapper already reserves the exact box (4:5, then a fixed
+          // 176x144 from `sm`), so the image cannot shift the row as it lands —
+          // it only needs to avoid competing with the rows above for bandwidth.
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={photo} alt="" className="h-full w-full object-cover" />
+          <img
+            src={photo}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover"
+          />
         ) : (
           <div className="flex h-full w-full items-center justify-center font-display text-3xl text-[var(--color-text-faint)]">
             {heading.charAt(0)}
