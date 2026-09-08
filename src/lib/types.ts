@@ -267,6 +267,7 @@ export interface PublicStats {
   statAverageRating: string;
   statProfilesReviewedPercent: string;
   whatsappNumber: string | null;
+  bkashMerchantNumber: string | null;
 }
 
 export interface ConversationOtherUser {
