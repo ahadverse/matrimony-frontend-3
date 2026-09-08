@@ -1,24 +1,19 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
-import { Check, ChevronDown, Copy, Heart, MessageCircleHeart, Sparkles, UserCheck, Users } from 'lucide-react';
+import { Check, ChevronDown, Heart, MessageCircleHeart, Sparkles, UserCheck, Users } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { FadeIn } from '@/components/motion/FadeIn';
 import { StaggerItem, StaggerList } from '@/components/motion/StaggerList';
 import { api, ApiError } from '@/lib/api-client';
-import { usePublicStats } from '@/lib/queries';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { ASSISTANCE_PLANS, type AssistancePlanId } from './plans';
-
-// Mirrors the backend's own validation for the manual-bKash proof fields
-// (wallet/dto/submit-manual-bkash.dto.ts and assistant-requests' own DTO).
-const TRX_ID_PATTERN = /^[A-Z0-9]{8,12}$/;
-const PAYER_NUMBER_PATTERN = /^(?:\+?880|0)1[3-9]\d{8}$/;
 
 const steps = [
   { icon: UserCheck, titleKey: 'assistantService.step1Title', bodyKey: 'assistantService.step1Body' },
@@ -81,6 +76,35 @@ export default function AssistanceServicePage() {
         </div>
 
         <FadeIn delay={0.25} className="relative z-10 mx-auto mt-12 max-w-3xl" id="assistance-form">
+          {/* Prices shown here too, not just in the pricing table further down
+              the page — a visitor who scrolls straight to the form should never
+              have to hunt for what a plan costs before filling it in. */}
+          <div className="mb-4 grid grid-cols-2 gap-3">
+            {ASSISTANCE_PLANS.map((plan) => {
+              const isSelected = plan.id === selectedPlan;
+              return (
+                <button
+                  key={plan.id}
+                  type="button"
+                  onClick={() => setSelectedPlan(plan.id)}
+                  aria-pressed={isSelected}
+                  className={clsx(
+                    'rounded-xl border p-4 text-center transition-colors',
+                    isSelected
+                      ? 'border-[var(--color-primary-accent)] bg-[var(--color-primary-tint)]'
+                      : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary)]',
+                  )}
+                >
+                  <div className="text-sm font-medium text-[var(--color-text-muted)]">
+                    {t(`assistantService.${plan.labelKey}`)}
+                  </div>
+                  <div className="font-display mt-1 text-xl text-[var(--color-text)]">
+                    {t(`assistantService.${plan.priceKey}`)}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
           <AssistanceForm selectedPlan={selectedPlan} onSelectPlan={setSelectedPlan} />
         </FadeIn>
       </section>
@@ -222,54 +246,49 @@ function AssistanceForm({
   onSelectPlan: (plan: AssistancePlanId | null) => void;
 }) {
   const { t } = useLanguage();
-  const { data: publicStats } = usePublicStats();
+  const router = useRouter();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [profileId, setProfileId] = useState('');
-  const [trxId, setTrxId] = useState('');
-  const [payerNumber, setPayerNumber] = useState('');
-  const [copied, setCopied] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [submittedKind, setSubmittedKind] = useState<'assistant_request' | 'contact_message'>('contact_message');
 
   const selectedPlanData = ASSISTANCE_PLANS.find((plan) => plan.id === selectedPlan) ?? null;
-  const trimmedTrxId = trxId.trim().toUpperCase();
-  const trimmedPayerNumber = payerNumber.trim();
-  const isManualValid = TRX_ID_PATTERN.test(trimmedTrxId) && PAYER_NUMBER_PATTERN.test(trimmedPayerNumber);
 
+  // A plan carries a price, so choosing one sends the visitor to the checkout
+  // page to pay before the enquiry becomes a sales lead — this mutation only
+  // ever handles the "no plan yet" path, which stays a plain contact message.
   const submit = useMutation({
-    mutationFn: (withPayment: boolean) =>
+    mutationFn: () =>
       api.post<{ kind: 'assistant_request' | 'contact_message' }>('assistant-requests', {
         name,
         phone,
         email,
         profileId: profileId || undefined,
-        plan: selectedPlan ?? undefined,
-        ...(withPayment ? { trxId: trimmedTrxId, payerAccountNumber: trimmedPayerNumber } : {}),
       }),
-    onSuccess: (result) => {
+    onSuccess: () => {
       setSubmitted(true);
-      setSubmittedKind(result.kind);
       setName('');
       setPhone('');
       setEmail('');
       setProfileId('');
-      setTrxId('');
-      setPayerNumber('');
       onSelectPlan(null);
     },
     onError: (e) => toast.error(e instanceof ApiError ? String(e.message) : t('assistantService.formError')),
   });
 
-  function handleCopyMerchantNumber() {
-    if (!publicStats?.bkashMerchantNumber) return;
-    navigator.clipboard.writeText(publicStats.bkashMerchantNumber);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
   const isValid = name.trim() !== '' && phone.trim() !== '' && email.trim() !== '';
+
+  function handleSubmit() {
+    if (!isValid) return;
+    if (selectedPlanData) {
+      const params = new URLSearchParams({ name, phone, email, plan: selectedPlanData.id });
+      if (profileId.trim()) params.set('profileId', profileId.trim());
+      router.push(`/assistance-service/checkout?${params.toString()}`);
+      return;
+    }
+    submit.mutate();
+  }
 
   return (
     <Card className="p-6 sm:p-8">
@@ -283,9 +302,7 @@ function AssistanceForm({
 
       {submitted ? (
         <p className="mt-6 rounded-xl bg-[var(--color-success-tint)] px-4 py-3 text-center text-sm font-medium text-[var(--color-success)]">
-          {submittedKind === 'assistant_request'
-            ? t('assistantService.formSuccessPaid')
-            : t('assistantService.formSuccess')}
+          {t('assistantService.formSuccess')}
         </p>
       ) : (
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -330,80 +347,16 @@ function AssistanceForm({
               />
             </div>
             <p className="text-xs text-[var(--color-text-faint)]">{t('assistantService.formPlanHint')}</p>
-            {selectedPlanData && (
-              <p className="mt-1 text-sm font-medium text-[var(--color-text)]">
-                {t('assistantService.formSelectedPlanLabel')}: {t(`assistantService.${selectedPlanData.labelKey}`)} —{' '}
-                {t(`assistantService.${selectedPlanData.priceKey}`)}
-              </p>
-            )}
           </div>
 
           <Button
-            onClick={() => submit.mutate(false)}
-            loading={submit.isPending && !isManualValid}
+            onClick={handleSubmit}
+            loading={submit.isPending}
             disabled={!isValid || submit.isPending}
             className="sm:col-span-2"
           >
             {submit.isPending ? t('assistantService.formSubmitting') : t('assistantService.formSubmit')}
           </Button>
-
-          {selectedPlanData && (
-            <Card className="flex flex-col gap-4 p-4 sm:col-span-2">
-              <div>
-                <p className="text-sm font-semibold text-[var(--color-text)]">
-                  {t('assistantService.manualBkashToggleLabel')}
-                </p>
-                <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-                  {t('assistantService.manualBkashInstructions', {
-                    amount: t(`assistantService.${selectedPlanData.priceKey}`),
-                  })}
-                </p>
-              </div>
-
-              <div>
-                <p className="mb-1.5 text-sm font-medium text-[var(--color-text-muted)]">
-                  {t('checkout.manualBkash.merchantNumberLabel')}
-                </p>
-                <div className="flex h-12 items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4">
-                  <span className="font-display text-lg text-[var(--color-text)]">
-                    {publicStats?.bkashMerchantNumber ?? '—'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleCopyMerchantNumber}
-                    className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-primary-accent)] hover:underline"
-                  >
-                    {copied ? <Check size={14} /> : <Copy size={14} />}
-                    {copied ? t('checkout.manualBkash.copied') : t('checkout.manualBkash.copy')}
-                  </button>
-                </div>
-              </div>
-
-              <Input
-                label={t('checkout.manualBkash.trxIdLabel')}
-                placeholder={t('checkout.manualBkash.trxIdPlaceholder')}
-                value={trxId}
-                onChange={(e) => setTrxId(e.target.value)}
-              />
-
-              <Input
-                label={t('checkout.manualBkash.payerNumberLabel')}
-                placeholder={t('checkout.manualBkash.payerNumberPlaceholder')}
-                value={payerNumber}
-                onChange={(e) => setPayerNumber(e.target.value)}
-              />
-
-              <Button
-                onClick={() => submit.mutate(true)}
-                loading={submit.isPending && isManualValid}
-                disabled={!isValid || !isManualValid || submit.isPending}
-              >
-                {t('assistantService.manualBkashSubmit')}
-              </Button>
-
-              <p className="text-xs text-[var(--color-text-faint)]">{t('assistantService.manualBkashPendingNote')}</p>
-            </Card>
-          )}
         </div>
       )}
     </Card>
