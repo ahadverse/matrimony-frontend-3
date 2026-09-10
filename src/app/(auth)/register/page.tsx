@@ -388,6 +388,7 @@ function RegisterWizard() {
                   onChange={setAvatar}
                   label={t('auth.register.avatarLabel')}
                   hint={t('auth.register.avatarHint')}
+                  required
                 />
 
                 <FieldRow label={t('auth.register.gender')} required>

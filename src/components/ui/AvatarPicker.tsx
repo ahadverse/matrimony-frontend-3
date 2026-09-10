@@ -17,11 +17,13 @@ export function AvatarPicker({
   onChange,
   label,
   hint,
+  required,
 }: {
   file: File | null;
   onChange: (file: File | null) => void;
   label: string;
   hint?: string;
+  required?: boolean;
 }) {
   const { t } = useLanguage();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -65,6 +67,7 @@ export function AvatarPicker({
         className="text-sm font-medium text-[var(--color-primary-accent)] hover:underline"
       >
         {file ? t('auth.register.avatarChange') : label}
+        {required && <span className="text-[var(--color-danger)]"> *</span>}
       </button>
 
       {file && (
