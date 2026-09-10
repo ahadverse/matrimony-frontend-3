@@ -364,6 +364,62 @@ function RegisterWizard() {
   // reaches screen two without ever seeing screen one, so it has no gender yet.
   const needsGenderHere = step === 'basic' && !form.gender;
 
+  // Each step's Continue button stays enabled rather than silently disabling —
+  // clicking it while something's missing shows `stepRequired` instead of
+  // leaving the member to guess which field the button is waiting on.
+  const [accountAttempted, setAccountAttempted] = useState(false);
+  const [basicAttempted, setBasicAttempted] = useState(false);
+  const [familyAttempted, setFamilyAttempted] = useState(false);
+
+  const isAccountValid =
+    !!avatar &&
+    !!form.gender &&
+    phone.number.replace(/\D/g, '').length >= 6 &&
+    !!form.email.trim() &&
+    form.password.length >= 8;
+
+  const isBasicValid =
+    !!form.gender &&
+    !!form.name.trim() &&
+    !!form.maritalStatus &&
+    !!form.religion &&
+    !!form.profession &&
+    !!form.dob &&
+    !!form.heightCm &&
+    form.bio.trim().length >= 20;
+
+  const isFamilyValid =
+    !!form.location.country &&
+    !!form.fatherStatus &&
+    !!form.fatherOccupation.trim() &&
+    !!form.motherStatus &&
+    !!form.motherOccupation.trim() &&
+    !!form.relativePhone.trim();
+
+  function handleAccountContinue() {
+    if (!isAccountValid) {
+      setAccountAttempted(true);
+      return;
+    }
+    createAccount.mutate();
+  }
+
+  function handleBasicContinue() {
+    if (!isBasicValid) {
+      setBasicAttempted(true);
+      return;
+    }
+    saveBasic.mutate();
+  }
+
+  function handleFamilyContinue() {
+    if (!isFamilyValid) {
+      setFamilyAttempted(true);
+      return;
+    }
+    saveFamily.mutate();
+  }
+
   return (
     <AuthShell wide={step !== 'done'} backdrop>
       <AnimatePresence mode="wait">
@@ -438,19 +494,15 @@ function RegisterWizard() {
                 />
               </div>
 
-              <Button
-                onClick={() => createAccount.mutate()}
-                loading={createAccount.isPending}
-                disabled={
-                  !avatar ||
-                  !form.gender ||
-                  phone.number.replace(/\D/g, '').length < 6 ||
-                  !form.email.trim() ||
-                  form.password.length < 8
-                }
-              >
+              <Button onClick={handleAccountContinue} loading={createAccount.isPending}>
                 {t('common.continue')}
               </Button>
+
+              {accountAttempted && !isAccountValid && (
+                <p className="text-center text-sm text-[var(--color-danger)]">
+                  {t('auth.register.stepRequired')}
+                </p>
+              )}
 
               <p className="text-center text-xs text-[var(--color-text-faint)]">
                 <RichText
@@ -593,17 +645,8 @@ function RegisterWizard() {
 
               <StepActions
                 loading={saveBasic.isPending}
-                disabled={
-                  !form.gender ||
-                  !form.name.trim() ||
-                  !form.maritalStatus ||
-                  !form.religion ||
-                  !form.profession ||
-                  !form.dob ||
-                  !form.heightCm ||
-                  form.bio.trim().length < 20
-                }
-                onContinue={() => saveBasic.mutate()}
+                error={basicAttempted && !isBasicValid ? t('auth.register.stepRequired') : undefined}
+                onContinue={handleBasicContinue}
               />
             </WizardStepShell>
           )}
@@ -673,17 +716,10 @@ function RegisterWizard() {
 
               <StepActions
                 loading={saveFamily.isPending}
-                disabled={
-                  !form.location.country ||
-                  !form.fatherStatus ||
-                  !form.fatherOccupation.trim() ||
-                  !form.motherStatus ||
-                  !form.motherOccupation.trim() ||
-                  !form.relativePhone.trim()
-                }
+                error={familyAttempted && !isFamilyValid ? t('auth.register.stepRequired') : undefined}
                 onBack={() => setStep('basic')}
                 continueLabel={t('auth.register.completeRegistration')}
-                onContinue={() => saveFamily.mutate()}
+                onContinue={handleFamilyContinue}
               />
             </WizardStepShell>
           )}
@@ -773,27 +809,30 @@ function StepActions({
   onBack,
   onContinue,
   loading,
-  disabled,
+  error,
   continueLabel,
 }: {
   onBack?: () => void;
   onContinue: () => void;
   loading: boolean;
-  disabled: boolean;
+  error?: string;
   continueLabel?: string;
 }) {
   const { t } = useLanguage();
 
   return (
-    <div className="flex gap-2">
-      {onBack && (
-        <Button variant="secondary" className="flex-1" onClick={onBack} disabled={loading}>
-          {t('common.back')}
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-2">
+        {onBack && (
+          <Button variant="secondary" className="flex-1" onClick={onBack} disabled={loading}>
+            {t('common.back')}
+          </Button>
+        )}
+        <Button className="flex-1" onClick={onContinue} loading={loading}>
+          {continueLabel ?? t('common.continue')}
         </Button>
-      )}
-      <Button className="flex-1" onClick={onContinue} loading={loading} disabled={disabled}>
-        {continueLabel ?? t('common.continue')}
-      </Button>
+      </div>
+      {error && <p className="text-center text-sm text-[var(--color-danger)]">{error}</p>}
     </div>
   );
 }
