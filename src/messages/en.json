@@ -1001,6 +1001,8 @@
     "saved": "Profile saved — pending re-review",
     "savePhotosFirst": "Save your profile details first, then you can add photos.",
     "addPhoto": "Add Photo",
+    "lastPhotoHint": "Every profile needs at least one photo. To replace this one, add the new photo first, then remove this.",
+    "photoDeleteFailed": "Could not remove photo",
     "heightFeet": "Feet",
     "heightInches": "Inches",
     "feet": "feet",

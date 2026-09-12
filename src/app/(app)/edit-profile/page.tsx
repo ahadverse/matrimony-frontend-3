@@ -787,6 +787,8 @@ function PhotosTab() {
     return <p className="text-sm text-[var(--color-text-muted)]">{t('editProfile.savePhotosFirst')}</p>;
   }
 
+  const isOnlyPhoto = profile.photos.length === 1;
+
   return (
     <Card className="p-4">
       <div className="flex flex-wrap gap-3">
@@ -794,12 +796,23 @@ function PhotosTab() {
           <div key={photo.id} className="group relative h-28 w-28 overflow-hidden rounded-xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={resolveUploadUrl(photo.url) ?? ''} alt="" className="h-full w-full object-cover" />
-            <button
-              onClick={() => deletePhoto.mutate(photo.id)}
-              className="absolute inset-0 flex items-center justify-center bg-[var(--color-scrim)] opacity-0 transition-opacity group-hover:opacity-100"
-            >
-              <Trash2 size={18} className="text-[var(--color-on-primary)]" />
-            </button>
+            {/* Every member needs a photo, so the last one cannot be removed —
+                the server refuses it either way, and hiding the button here
+                means the rule reads as a rule rather than as a failed click.
+                Replacing it still works: add the new photo, then delete this. */}
+            {!isOnlyPhoto && (
+              <button
+                onClick={() =>
+                  deletePhoto.mutate(photo.id, {
+                    onError: (e) =>
+                      toast.error(e instanceof ApiError ? String(e.message) : t('editProfile.photoDeleteFailed')),
+                  })
+                }
+                className="absolute inset-0 flex items-center justify-center bg-[var(--color-scrim)] opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                <Trash2 size={18} className="text-[var(--color-on-primary)]" />
+              </button>
+            )}
           </div>
         ))}
         <label id="field-photo" className="flex h-28 w-28 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--color-border)] text-[var(--color-text-faint)]">
@@ -826,6 +839,9 @@ function PhotosTab() {
         </label>
       </div>
       <p className="mt-2 text-xs text-[var(--color-text-faint)]">{t('common.imageSizeHint', { size: MAX_IMAGE_SIZE_MB })}</p>
+      {isOnlyPhoto && (
+        <p className="mt-1 text-xs text-[var(--color-text-faint)]">{t('editProfile.lastPhotoHint')}</p>
+      )}
     </Card>
   );
 }
