@@ -202,7 +202,9 @@ function RegisterWizard() {
 
   // Resume where it left off after a reload — the account is created on screen
   // one, so losing step state on refresh used to strand people mid-signup. The
-  // chosen photo is a File and cannot be persisted, so it always resumes empty.
+  // chosen photo is a File and cannot be persisted, so it always resumes empty;
+  // screen one no longer advances until it has been uploaded, so a resumed
+  // session is never one that has already walked past the photo.
   useEffect(() => {
     setRestoreChecked(true);
     const raw = sessionStorage.getItem(REGISTER_PROGRESS_KEY);
@@ -258,15 +260,27 @@ function RegisterWizard() {
    * Screen one. Gender and the phone number go in with the account rather than
    * being patched on afterwards, so a clash on either is reported here as a
    * field error instead of leaving a half-made account behind.
+   *
+   * The photo goes in with it for the same reason, and a stronger one: it used
+   * to be held in React state and uploaded on screen two, so a reload in
+   * between lost it — a File cannot be persisted to sessionStorage, screen two
+   * never asked again, and the member finished the wizard with no photo and
+   * nothing to tell them so. Sent as part of the registration, there is no
+   * in-between left to interrupt; the server refuses to create the account
+   * without it.
    */
   const createAccount = useMutation({
-    mutationFn: () =>
-      api.post<AuthResponse>('auth/register', {
-        email: form.email.trim(),
-        password: form.password,
-        gender: form.gender || undefined,
-        phone: formatPhone(phone) || undefined,
-      }),
+    mutationFn: async () => {
+      const body = new FormData();
+      body.append('email', form.email.trim());
+      body.append('password', form.password);
+      if (form.gender) body.append('gender', form.gender);
+      const formatted = formatPhone(phone);
+      if (formatted) body.append('phone', formatted);
+      // `isAccountValid` has already refused to submit without one.
+      if (avatar) body.append('photo', avatar);
+      return api.post<AuthResponse>('auth/register', body);
+    },
     onSuccess: async (data) => {
       setToken(data.accessToken);
       await queryClient.invalidateQueries({ queryKey: ['me'] });
@@ -276,19 +290,12 @@ function RegisterWizard() {
       toast.error(e instanceof ApiError ? String(e.message) : t('auth.register.accountError')),
   });
 
-  const uploadAvatar = useMutation({
-    mutationFn: (file: File) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      return api.post('profiles/me/photos', formData);
-    },
-  });
-
   /**
    * Screen two. Date of birth lives on the user record rather than the profile,
-   * so this is the one step that touches two endpoints — and it is also where
-   * the photo chosen on screen one is finally uploaded, since photos hang off
-   * the profile row and the profile cannot exist without a name.
+   * so this is the one step that touches two endpoints.
+   *
+   * The photo is no longer among them: it is uploaded on screen one now, at the
+   * point it is chosen, so nothing has to survive the gap between the screens.
    */
   const saveBasic = useMutation({
     mutationFn: async () => {
@@ -309,20 +316,6 @@ function RegisterWizard() {
         // hold every new member below the browse threshold.
         profileCreatedBy: 'self',
       });
-
-      if (avatar) {
-        // Deliberately last, and deliberately not fatal: the profile is saved
-        // by this point, so a rejected image should not cost the member the
-        // whole step. They land on screen three either way and the completion
-        // panel will ask for a photo.
-        try {
-          await uploadAvatar.mutateAsync(avatar);
-        } catch (e) {
-          toast.error(
-            e instanceof ApiError ? String(e.message) : t('auth.register.avatarUploadFailed'),
-          );
-        }
-      }
     },
     onSuccess: () => setStep('family'),
     onError: (e) =>
@@ -441,6 +434,7 @@ function RegisterWizard() {
                   label={t('auth.register.avatarLabel')}
                   hint={t('auth.register.avatarHint')}
                   required
+                  uploading={createAccount.isPending}
                 />
 
                 <FieldRow label={t('auth.register.gender')} required>
@@ -491,7 +485,9 @@ function RegisterWizard() {
               </div>
 
               <Button onClick={handleAccountContinue} loading={createAccount.isPending}>
-                {t('common.continue')}
+                {createAccount.isPending
+                  ? t('auth.register.avatarUploading')
+                  : t('common.continue')}
               </Button>
 
               <p className="text-center text-xs text-[var(--color-text-faint)]">
