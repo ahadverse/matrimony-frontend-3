@@ -115,6 +115,7 @@ export function SiteFooter({ className }: { className?: string } = {}) {
 
         <div className="mt-12 flex flex-col items-center gap-2 border-t border-[var(--color-inverse-border)] pt-6 text-center text-xs">
           <span className="inverse-muted">{t('footer.registeredOffice')}</span>
+          <span className="inverse-muted">{t('footer.tradeLicense')}</span>
           <span className="inverse-muted">{t('landing.footerCopyright', { year: new Date().getFullYear() })}</span>
         </div>
       </div>
