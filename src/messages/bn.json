@@ -1076,6 +1076,7 @@
     "minAmount": "সর্বনিম্ন টপ-আপ {amount}",
     "customAmount": "নিজস্ব পরিমাণ",
     "payWithNagad": "নগদে পেমেন্ট করুন",
+    "payWithPaystation": "বিকাশ, নগদ, রকেট ও কার্ডে পেমেন্ট করুন",
     "resultSuccessTitle": "টপ-আপ সফল হয়েছে",
     "resultSuccessBody": "আপনার ওয়ালেটে টাকা যোগ হয়েছে।",
     "resultFailedTitle": "টপ-আপ ব্যর্থ হয়েছে",
