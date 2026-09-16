@@ -13,14 +13,18 @@ import { api, ApiError } from '@/lib/api-client';
 import { useWallet } from '@/lib/queries';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 
-const PRESET_AMOUNTS = [500, 1000, 2000, 5000];
+// First rung is the minimum top-up itself (AppSettings.minTopupAmount), so the
+// cheapest option on screen is always one the server will accept.
+const PRESET_AMOUNTS = [100, 500, 1000, 2000];
 
 type Region = 'bd' | 'intl';
 
 export default function CheckoutPage() {
   const { t } = useLanguage();
   const { data: wallet } = useWallet();
-  const minAmount = wallet?.minTopupAmount ?? 500;
+  // Only the pre-fetch placeholder — the real floor is whatever the server
+  // reports, since an admin can change it from the settings panel.
+  const minAmount = wallet?.minTopupAmount ?? 100;
 
   const [region, setRegion] = useState<Region>('bd');
   const [isSupportOpen, setIsSupportOpen] = useState(false);

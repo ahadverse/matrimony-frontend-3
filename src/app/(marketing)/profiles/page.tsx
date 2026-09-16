@@ -16,6 +16,7 @@ import { PublicProfileRowSkeleton } from '@/components/profile/PublicProfileRowS
 import { ProfilesPageSkeleton } from '@/components/profile/ProfilesPageSkeleton';
 import { SkeletonGroup } from '@/components/ui/Skeleton';
 import {
+  useCurrentUser,
   usePrefetchPublicProfiles,
   usePublicProfiles,
   useUnlockProfile,
@@ -100,14 +101,20 @@ function PublicProfilesContent() {
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const signedIn = useIsSignedIn();
 
-  // A signed-in member is served the opposite gender and nothing else, so a
-  // `gender` left over from a deep link or an earlier anonymous session is
-  // dropped rather than sent — the backend would ignore it anyway, and keeping
-  // it would inflate the "Filters (n)" badge with a filter that does nothing.
-  const effectiveFilters = useMemo(
-    () => (signedIn ? { ...filters, gender: undefined } : filters),
-    [filters, signedIn],
-  );
+  const { data: me } = useCurrentUser(signedIn);
+
+  // A signed-in member is served the opposite gender and nothing else. The
+  // backend enforces that too, but it can only do so for a request it actually
+  // reads a session off — an expired or missing bearer token makes it treat a
+  // signed-in visitor as anonymous, and an anonymous request gets no gender
+  // rule at all. Merely *dropping* `gender` (what this used to do) then leaked
+  // both genders into the directory with the filter UI hidden, so there was no
+  // way back. Pinning the opposite gender explicitly holds either way.
+  const effectiveFilters = useMemo(() => {
+    if (!signedIn) return filters;
+    const opposite = me?.gender === 'male' ? 'female' : me?.gender === 'female' ? 'male' : undefined;
+    return { ...filters, gender: opposite };
+  }, [filters, signedIn, me?.gender]);
 
   const { data, isPending, isPlaceholderData, isFetching, isError, refetch } = usePublicProfiles(
     effectiveFilters,
@@ -126,9 +133,15 @@ function PublicProfilesContent() {
     setPage(1);
   }, []);
 
+  // Counts what the reader actually chose, not the gender pinned above on
+  // their behalf — that one is not a filter they can clear, so surfacing it as
+  // "Filters (1)" on a first visit would just be noise.
   const activeFilterCount = useMemo(
-    () => Object.values(effectiveFilters).filter((v) => v !== undefined && v !== '').length,
-    [effectiveFilters],
+    () =>
+      Object.entries(filters).filter(
+        ([key, v]) => v !== undefined && v !== '' && !(signedIn && key === 'gender'),
+      ).length,
+    [filters, signedIn],
   );
 
   function requestUnlock(userId: string) {

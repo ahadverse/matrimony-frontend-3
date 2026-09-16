@@ -30,7 +30,10 @@ export function SwipeStack({ cards, onSwipe }: SwipeStackProps) {
 
   return (
     <div>
-      <div className="relative mx-auto h-[min(72dvh,560px)] w-full max-w-[420px]">
+      {/* Shorter below `lg`: that's exactly where BottomTabBar is fixed onscreen
+          eating real viewport height, so the full 72dvh card left the action
+          row (reject/superlike/like, rendered after this) below the fold. */}
+      <div className="relative mx-auto h-[min(56dvh,480px)] w-full max-w-[420px] lg:h-[min(72dvh,560px)]">
         <AnimatePresence custom={exitAction} onExitComplete={() => setExitAction(null)}>
           {visible.map((card, index) => (
             <SwipeCard

@@ -8,7 +8,7 @@ import { BadgeCheck, Heart, Lock, MessageCircle, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { ApiError, resolveUploadUrl } from '@/lib/api-client';
+import { ApiError, isInterestGateError, resolveUploadUrl } from '@/lib/api-client';
 import { useIsSignedIn } from '@/lib/auth-token';
 import { useFormatHeight } from '@/lib/useFormatHeight';
 import { useOptionLabel } from '@/lib/profileOptionLabels';
@@ -167,6 +167,12 @@ function RowActions({ userId, locked }: { userId: string; locked: boolean }) {
           // treat it the same as success rather than surfacing an error.
           if (error instanceof ApiError && error.status === 409) {
             setInterestSent(true);
+            return;
+          }
+          // Below the interest gate the server's message names the percentage
+          // still needed, which is more use here than a generic failure.
+          if (isInterestGateError(error)) {
+            toast.error(String(error.message));
             return;
           }
           toast.error(t('profileDetail.interestError'));

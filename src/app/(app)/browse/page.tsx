@@ -24,7 +24,7 @@ import {
 } from '@/lib/queries';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { useIsSignedIn } from '@/lib/auth-token';
-import { ApiError } from '@/lib/api-client';
+import { ApiError, isInterestGateError } from '@/lib/api-client';
 import { EMPTY_LOCATION, type ProfileLocation } from '@/lib/geo';
 import type { BrowseCard } from '@/lib/types';
 
@@ -161,6 +161,14 @@ function BrowseContent() {
           // recorded, so put the card back rather than silently losing it.
           if (e instanceof ApiError && e.status === 409) return;
           setDeck((prev) => (prev.some((c) => c.id === card.id) ? prev : [card, ...prev]));
+          // The interest gate is a standing condition, so say what it is (the
+          // server's message names the percentage) and send them to the form
+          // that clears it, rather than the generic "try again".
+          if (isInterestGateError(e)) {
+            toast.error(String(e.message));
+            router.push('/edit-profile');
+            return;
+          }
           toast.error(t('browse.swipeFailed'));
         },
       },

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import clsx from 'clsx';
 import { Check, Info, MapPin, UserRound } from 'lucide-react';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { Input } from '@/components/ui/Input';
@@ -54,6 +55,66 @@ import type { AuthResponse, Gender } from '@/lib/types';
 type Step = 'account' | 'basic' | 'family' | 'done';
 
 const REGISTER_PROGRESS_KEY = 'biyekoralagbe_register_progress';
+
+const MIN_PASSWORD_LENGTH = 8;
+/** Mirrors the bio floor the profile-completion scorer expects of a finished signup. */
+const MIN_BIO_LENGTH = 20;
+
+/**
+ * Every field the wizard can complain about. Keyed by the same name the form
+ * uses, so `set()` can clear a field's error without a lookup table, plus
+ * `avatar` and `phone`, which live in their own state.
+ */
+type FieldKey =
+  | 'avatar'
+  | 'gender'
+  | 'phone'
+  | 'email'
+  | 'password'
+  | 'name'
+  | 'maritalStatus'
+  | 'religion'
+  | 'profession'
+  | 'dob'
+  | 'heightCm'
+  | 'bio'
+  | 'location'
+  | 'fatherStatus'
+  | 'fatherOccupation'
+  | 'motherStatus'
+  | 'motherOccupation'
+  | 'relativePhone';
+
+/** The label each field is shown under, reused verbatim in the summary toast. */
+const FIELD_LABEL_KEYS: Record<FieldKey, string> = {
+  avatar: 'auth.register.avatarLabel',
+  gender: 'auth.register.gender',
+  phone: 'auth.register.phoneLabel',
+  email: 'auth.register.email',
+  password: 'auth.register.createPassword',
+  name: 'auth.register.candidateName',
+  maritalStatus: 'profileDetail.maritalStatus',
+  religion: 'profileDetail.religion',
+  profession: 'auth.register.profession',
+  dob: 'auth.register.dob',
+  heightCm: 'profileDetail.height',
+  bio: 'auth.register.writeAboutYourself',
+  location: 'auth.register.country',
+  fatherStatus: 'auth.register.fatherStatus',
+  fatherOccupation: 'auth.register.fatherOccupation',
+  motherStatus: 'auth.register.motherStatus',
+  motherOccupation: 'auth.register.motherOccupation',
+  relativePhone: 'auth.register.relativePhone',
+};
+
+function omit<K extends string>(
+  source: Partial<Record<K, string>>,
+  key: K,
+): Partial<Record<K, string>> {
+  const next = { ...source };
+  delete next[key];
+  return next;
+}
 
 /** The steps a completed account can be deep-linked back into (`/register?step=`). */
 const RESUMABLE_STEPS = ['basic', 'family'] as const;
@@ -189,6 +250,8 @@ function RegisterWizard() {
   const [phone, setPhone] = useState<PhoneValue>(EMPTY_PHONE);
   const [form, setForm] = useState<WizardForm>(emptyForm);
   const [avatar, setAvatar] = useState<File | null>(null);
+  /** Field key → what is wrong with it, shown under that field. */
+  const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
 
   const { data: currentUser } = useCurrentUser(hasRequestedStep);
   const { data: existingProfile } = useMyProfile(hasRequestedStep);
@@ -198,6 +261,9 @@ function RegisterWizard() {
 
   function set<K extends keyof WizardForm>(key: K, value: WizardForm[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+    // Editing a field clears its own complaint, so a correction is
+    // acknowledged straight away rather than only on the next Continue.
+    setErrors((prev) => (key in prev ? omit(prev, key) : prev));
   }
 
   // Resume where it left off after a reload — the account is created on screen
@@ -357,56 +423,91 @@ function RegisterWizard() {
   // reaches screen two without ever seeing screen one, so it has no gender yet.
   const needsGenderHere = step === 'basic' && !form.gender;
 
-  // Each step's Continue button stays enabled rather than silently disabling —
-  // clicking it while something's missing toasts `stepRequired` instead of
-  // leaving the member to guess which field the button is waiting on.
-  const isAccountValid =
-    !!avatar &&
-    !!form.gender &&
-    phone.number.replace(/\D/g, '').length >= 6 &&
-    !!form.email.trim() &&
-    form.password.length >= 8;
+  // Each step's Continue button stays enabled rather than silently disabling.
+  // Clicking it while something is wrong names every offending field, under
+  // the field itself and in one summary toast — a single global "fill in the
+  // required boxes" left the member hunting for which box, and a short bio (a
+  // filled-in field that is still invalid) made that worse, since nothing on
+  // screen looked empty.
+  const required = t('auth.register.errRequired');
 
-  const isBasicValid =
-    !!form.gender &&
-    !!form.name.trim() &&
-    !!form.maritalStatus &&
-    !!form.religion &&
-    !!form.profession &&
-    !!form.dob &&
-    !!form.heightCm &&
-    form.bio.trim().length >= 20;
+  function validateAccount(): Partial<Record<FieldKey, string>> {
+    const e: Partial<Record<FieldKey, string>> = {};
+    if (!avatar) e.avatar = required;
+    if (!form.gender) e.gender = required;
+    if (phone.number.replace(/\D/g, '').length < 6) e.phone = t('auth.register.errPhone');
+    if (!form.email.trim()) e.email = required;
+    if (form.password.length < MIN_PASSWORD_LENGTH) {
+      e.password = t('auth.register.errPasswordMin', { min: MIN_PASSWORD_LENGTH });
+    }
+    return e;
+  }
 
-  const isFamilyValid =
-    !!form.location.country &&
-    !!form.fatherStatus &&
-    !!form.fatherOccupation.trim() &&
-    !!form.motherStatus &&
-    !!form.motherOccupation.trim() &&
-    !!form.relativePhone.trim();
+  function validateBasic(): Partial<Record<FieldKey, string>> {
+    const e: Partial<Record<FieldKey, string>> = {};
+    if (!form.gender) e.gender = required;
+    if (!form.name.trim()) e.name = required;
+    if (!form.maritalStatus) e.maritalStatus = required;
+    if (!form.religion) e.religion = required;
+    if (!form.profession) e.profession = required;
+    if (!form.dob) e.dob = required;
+    if (!form.heightCm) e.heightCm = required;
+    const bio = form.bio.trim();
+    // Counted out loud: this is the one field that can look filled in and still
+    // be rejected, so it says how long it is and how long it has to be.
+    if (bio.length < MIN_BIO_LENGTH) {
+      e.bio = bio
+        ? t('auth.register.errBioShort', { min: MIN_BIO_LENGTH, count: bio.length })
+        : required;
+    }
+    return e;
+  }
+
+  function validateFamily(): Partial<Record<FieldKey, string>> {
+    const e: Partial<Record<FieldKey, string>> = {};
+    if (!form.location.country) e.location = required;
+    if (!form.fatherStatus) e.fatherStatus = required;
+    if (!form.fatherOccupation.trim()) e.fatherOccupation = required;
+    if (!form.motherStatus) e.motherStatus = required;
+    if (!form.motherOccupation.trim()) e.motherOccupation = required;
+    if (!form.relativePhone.trim()) e.relativePhone = required;
+    return e;
+  }
+
+  /**
+   * Returns false and paints the step when something is wrong. The toast lists
+   * the field labels so the problem is legible without scrolling, and the first
+   * offending field is scrolled into view for the same reason.
+   */
+  function check(validate: () => Partial<Record<FieldKey, string>>): boolean {
+    const found = validate();
+    const keys = Object.keys(found) as FieldKey[];
+    if (keys.length === 0) {
+      setErrors({});
+      return true;
+    }
+    setErrors(found);
+    toast.error(
+      `${t('auth.register.stepRequired')}\n${keys.map((k) => `• ${t(FIELD_LABEL_KEYS[k])}`).join('\n')}`,
+    );
+    requestAnimationFrame(() => {
+      document
+        .querySelector(`[data-field="${keys[0]}"]`)
+        ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
+    return false;
+  }
 
   function handleAccountContinue() {
-    if (!isAccountValid) {
-      toast.error(t('auth.register.stepRequired'));
-      return;
-    }
-    createAccount.mutate();
+    if (check(validateAccount)) createAccount.mutate();
   }
 
   function handleBasicContinue() {
-    if (!isBasicValid) {
-      toast.error(t('auth.register.stepRequired'));
-      return;
-    }
-    saveBasic.mutate();
+    if (check(validateBasic)) saveBasic.mutate();
   }
 
   function handleFamilyContinue() {
-    if (!isFamilyValid) {
-      toast.error(t('auth.register.stepRequired'));
-      return;
-    }
-    saveFamily.mutate();
+    if (check(validateFamily)) saveFamily.mutate();
   }
 
   return (
@@ -428,16 +529,27 @@ function RegisterWizard() {
               percent={STEP_PERCENT.account}
             >
               <div className="flex flex-col gap-4">
-                <AvatarPicker
-                  file={avatar}
-                  onChange={setAvatar}
-                  label={t('auth.register.avatarLabel')}
-                  hint={t('auth.register.avatarHint')}
-                  required
-                  uploading={createAccount.isPending}
-                />
+                <div data-field="avatar">
+                  <AvatarPicker
+                    file={avatar}
+                    onChange={(f) => {
+                      setAvatar(f);
+                      setErrors((prev) => omit(prev, 'avatar'));
+                    }}
+                    label={t('auth.register.avatarLabel')}
+                    hint={t('auth.register.avatarHint')}
+                    required
+                    error={errors.avatar}
+                    uploading={createAccount.isPending}
+                  />
+                </div>
 
-                <FieldRow label={t('auth.register.gender')} required>
+                <FieldRow
+                  label={t('auth.register.gender')}
+                  required
+                  error={errors.gender}
+                  field="gender"
+                >
                   <div className="grid grid-cols-2 gap-2">
                     {(['male', 'female'] as const).map((g) => (
                       <button
@@ -447,7 +559,9 @@ function RegisterWizard() {
                         className={`h-11 rounded-xl border text-sm font-medium transition-colors ${
                           form.gender === g
                             ? 'gradient-primary border-transparent text-[var(--color-on-primary)]'
-                            : 'border-[var(--color-border)] text-[var(--color-text-muted)]'
+                            : errors.gender
+                              ? 'border-[var(--color-danger)] text-[var(--color-text-muted)]'
+                              : 'border-[var(--color-border)] text-[var(--color-text-muted)]'
                         }`}
                       >
                         {t(`auth.register.${g}`)}
@@ -456,32 +570,44 @@ function RegisterWizard() {
                   </div>
                 </FieldRow>
 
-                <PhoneInput
-                  label={t('auth.register.phoneLabel')}
-                  required
-                  value={phone}
-                  onChange={setPhone}
-                  hint={t('auth.register.phoneHint')}
-                />
+                <div data-field="phone">
+                  <PhoneInput
+                    label={t('auth.register.phoneLabel')}
+                    required
+                    value={phone}
+                    onChange={(v) => {
+                      setPhone(v);
+                      setErrors((prev) => omit(prev, 'phone'));
+                    }}
+                    hint={t('auth.register.phoneHint')}
+                    error={errors.phone}
+                  />
+                </div>
 
-                <Input
-                  label={t('auth.register.email')}
-                  type="email"
-                  required
-                  autoComplete="email"
-                  placeholder={t('auth.register.emailPlaceholder')}
-                  value={form.email}
-                  onChange={(e) => set('email', e.target.value)}
-                />
-                <Input
-                  label={t('auth.register.createPassword')}
-                  type="password"
-                  required
-                  autoComplete="new-password"
-                  placeholder={t('auth.register.passwordPlaceholder')}
-                  value={form.password}
-                  onChange={(e) => set('password', e.target.value)}
-                />
+                <div data-field="email">
+                  <Input
+                    label={t('auth.register.email')}
+                    type="email"
+                    required
+                    autoComplete="email"
+                    placeholder={t('auth.register.emailPlaceholder')}
+                    value={form.email}
+                    error={errors.email}
+                    onChange={(e) => set('email', e.target.value)}
+                  />
+                </div>
+                <div data-field="password">
+                  <Input
+                    label={t('auth.register.createPassword')}
+                    type="password"
+                    required
+                    autoComplete="new-password"
+                    placeholder={t('auth.register.passwordPlaceholder')}
+                    value={form.password}
+                    error={errors.password}
+                    onChange={(e) => set('password', e.target.value)}
+                  />
+                </div>
               </div>
 
               <Button onClick={handleAccountContinue} loading={createAccount.isPending}>
@@ -519,7 +645,12 @@ function RegisterWizard() {
             >
               <div className="flex flex-col gap-4">
                 {needsGenderHere && (
-                  <FieldRow label={t('auth.register.gender')} required>
+                  <FieldRow
+                    label={t('auth.register.gender')}
+                    required
+                    error={errors.gender}
+                    field="gender"
+                  >
                     <div className="grid grid-cols-2 gap-2">
                       {(['male', 'female'] as const).map((g) => (
                         <button
@@ -535,19 +666,24 @@ function RegisterWizard() {
                   </FieldRow>
                 )}
 
-                <Input
-                  label={t('auth.register.candidateName')}
-                  required
-                  placeholder={t('auth.register.namePlaceholder')}
-                  value={form.name}
-                  onChange={(e) => set('name', e.target.value)}
-                />
+                <div data-field="name">
+                  <Input
+                    label={t('auth.register.candidateName')}
+                    required
+                    placeholder={t('auth.register.namePlaceholder')}
+                    value={form.name}
+                    error={errors.name}
+                    onChange={(e) => set('name', e.target.value)}
+                  />
+                </div>
 
+                <div data-field="maritalStatus">
                 <Select
                   label={t('profileDetail.maritalStatus')}
                   required
                   placeholder={t('common.selectPlaceholder')}
                   value={form.maritalStatus}
+                  error={errors.maritalStatus}
                   onChange={(e) => set('maritalStatus', e.target.value)}
                 >
                   {MARITAL_STATUSES.map((s) => (
@@ -556,12 +692,15 @@ function RegisterWizard() {
                     </option>
                   ))}
                 </Select>
+                </div>
 
+                <div data-field="religion">
                 <Select
                   label={t('profileDetail.religion')}
                   required
                   placeholder={t('common.selectPlaceholder')}
                   value={form.religion}
+                  error={errors.religion}
                   onChange={(e) => set('religion', e.target.value)}
                 >
                   {RELIGIONS.map((r) => (
@@ -570,12 +709,15 @@ function RegisterWizard() {
                     </option>
                   ))}
                 </Select>
+                </div>
 
+                <div data-field="profession">
                 <Select
                   label={t('auth.register.profession')}
                   required
                   placeholder={t('auth.register.selectProfession')}
                   value={form.profession}
+                  error={errors.profession}
                   onChange={(e) => set('profession', e.target.value)}
                 >
                   {PROFESSIONAL_AREAS.map((p) => (
@@ -584,8 +726,9 @@ function RegisterWizard() {
                     </option>
                   ))}
                 </Select>
+                </div>
 
-                <div>
+                <div data-field="dob">
                   <DobPicker
                     label={t('auth.register.dob')}
                     required
@@ -595,17 +738,20 @@ function RegisterWizard() {
                     dayPlaceholder={t('auth.register.dobDay')}
                     monthPlaceholder={t('auth.register.dobMonth')}
                     yearPlaceholder={t('auth.register.dobYear')}
+                    error={errors.dob}
                   />
                   <p className="mt-1.5 text-xs text-[var(--color-text-faint)]">
                     {t('auth.register.dobHint')}
                   </p>
                 </div>
 
+                <div data-field="heightCm">
                 <Select
                   label={t('profileDetail.height')}
                   required
                   placeholder={t('auth.register.selectHeight')}
                   value={form.heightCm}
+                  error={errors.heightCm}
                   onChange={(e) => set('heightCm', e.target.value)}
                 >
                   {HEIGHT_OPTIONS.map((option) => (
@@ -617,6 +763,7 @@ function RegisterWizard() {
                     </option>
                   ))}
                 </Select>
+                </div>
 
                 <TextareaField
                   label={t('auth.register.writeAboutYourself')}
@@ -626,6 +773,8 @@ function RegisterWizard() {
                   hint={t('auth.register.aboutHint')}
                   value={form.bio}
                   onChange={(v) => set('bio', v)}
+                  error={errors.bio}
+                  field="bio"
                 />
               </div>
 
@@ -642,13 +791,26 @@ function RegisterWizard() {
               percent={STEP_PERCENT.family}
             >
               <div className="flex flex-col gap-4">
-                <LocationPicker required value={form.location} onChange={(v) => set('location', v)} />
+                <div data-field="location">
+                  <LocationPicker
+                    required
+                    value={form.location}
+                    onChange={(v) => set('location', v)}
+                  />
+                  {errors.location && (
+                    <span className="mt-1.5 block text-xs text-[var(--color-danger)]">
+                      {errors.location}
+                    </span>
+                  )}
+                </div>
 
+                <div data-field="fatherStatus">
                 <Select
                   label={t('auth.register.fatherStatus')}
                   required
                   placeholder={t('common.selectPlaceholder')}
                   value={form.fatherStatus}
+                  error={errors.fatherStatus}
                   onChange={(e) => set('fatherStatus', e.target.value)}
                 >
                   {PARENT_STATUSES.map((s) => (
@@ -657,17 +819,23 @@ function RegisterWizard() {
                     </option>
                   ))}
                 </Select>
-                <Input
-                  label={t('auth.register.fatherOccupation')}
-                  required
-                  value={form.fatherOccupation}
-                  onChange={(e) => set('fatherOccupation', e.target.value)}
-                />
+                </div>
+                <div data-field="fatherOccupation">
+                  <Input
+                    label={t('auth.register.fatherOccupation')}
+                    required
+                    value={form.fatherOccupation}
+                    error={errors.fatherOccupation}
+                    onChange={(e) => set('fatherOccupation', e.target.value)}
+                  />
+                </div>
+                <div data-field="motherStatus">
                 <Select
                   label={t('auth.register.motherStatus')}
                   required
                   placeholder={t('common.selectPlaceholder')}
                   value={form.motherStatus}
+                  error={errors.motherStatus}
                   onChange={(e) => set('motherStatus', e.target.value)}
                 >
                   {PARENT_STATUSES.map((s) => (
@@ -676,24 +844,31 @@ function RegisterWizard() {
                     </option>
                   ))}
                 </Select>
-                <Input
-                  label={t('auth.register.motherOccupation')}
-                  required
-                  value={form.motherOccupation}
-                  onChange={(e) => set('motherOccupation', e.target.value)}
-                />
+                </div>
+                <div data-field="motherOccupation">
+                  <Input
+                    label={t('auth.register.motherOccupation')}
+                    required
+                    value={form.motherOccupation}
+                    error={errors.motherOccupation}
+                    onChange={(e) => set('motherOccupation', e.target.value)}
+                  />
+                </div>
 
                 {/* Collected for every profile, not just relative-managed ones —
                     families expect a guardian's number on the bio-data, and it
                     is one of the details an unlock pays for. */}
-                <Input
-                  type="tel"
-                  required
-                  label={t('auth.register.relativePhone')}
-                  placeholder="+8801700000000"
-                  value={form.relativePhone}
-                  onChange={(e) => set('relativePhone', e.target.value)}
-                />
+                <div data-field="relativePhone">
+                  <Input
+                    type="tel"
+                    required
+                    label={t('auth.register.relativePhone')}
+                    placeholder="+8801700000000"
+                    value={form.relativePhone}
+                    error={errors.relativePhone}
+                    onChange={(e) => set('relativePhone', e.target.value)}
+                  />
+                </div>
               </div>
 
               <StepActions
@@ -816,19 +991,25 @@ function StepActions({
 function FieldRow({
   label,
   required,
+  error,
+  field,
   children,
 }: {
   label: string;
   required?: boolean;
+  error?: string;
+  /** Marks the row so a failed Continue can scroll the first offender into view. */
+  field?: FieldKey;
   children: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1.5" data-field={field}>
       <span className="text-sm font-medium text-[var(--color-text-muted)]">
         {label}
         {required && <span className="text-[var(--color-danger)]"> *</span>}
       </span>
       {children}
+      {error && <span className="text-xs text-[var(--color-danger)]">{error}</span>}
     </div>
   );
 }
@@ -841,6 +1022,8 @@ function TextareaField({
   onChange,
   rows = 4,
   required,
+  error,
+  field,
 }: {
   label: string;
   placeholder?: string;
@@ -849,15 +1032,20 @@ function TextareaField({
   onChange: (value: string) => void;
   rows?: number;
   required?: boolean;
+  error?: string;
+  field?: FieldKey;
 }) {
   return (
-    <FieldRow label={label} required={required}>
+    <FieldRow label={label} required={required} error={error} field={field}>
       <textarea
         rows={rows}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full resize-y rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+        className={clsx(
+          'w-full resize-y rounded-xl border bg-[var(--color-surface)] px-4 py-3 text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20',
+          error ? 'border-[var(--color-danger)]' : 'border-[var(--color-border)]',
+        )}
       />
       {hint && (
         <span className="flex items-start gap-1.5 text-xs text-[var(--color-text-faint)]">

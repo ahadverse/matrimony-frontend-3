@@ -127,7 +127,7 @@ export function TopUpPromptModal() {
           <h2 className="mt-1 font-display text-2xl gradient-text">{t('dashboard.topupModal.title')}</h2>
           <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-muted)]">
             {t('dashboard.topupModal.body', {
-              amount: `${t('common.taka')}${wallet?.minTopupAmount ?? 500}`,
+              amount: `${t('common.taka')}${wallet?.minTopupAmount ?? 100}`,
             })}
           </p>
         </div>
