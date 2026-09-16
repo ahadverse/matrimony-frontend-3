@@ -14,6 +14,7 @@ interface DobPickerProps {
   minAge?: number;
   maxAge?: number;
   required?: boolean;
+  error?: string;
 }
 
 function daysInMonth(month: number, year: number) {
@@ -36,6 +37,7 @@ export function DobPicker({
   minAge = 18,
   maxAge = 100,
   required,
+  error,
 }: DobPickerProps) {
   const [day, setDay] = useState('');
   const [month, setMonth] = useState('');
@@ -135,6 +137,7 @@ export function DobPicker({
           ))}
         </Select>
       </div>
+      {error && <span className="text-xs text-[var(--color-danger)]">{error}</span>}
     </div>
   );
 }

@@ -109,7 +109,6 @@ export function SwipeCard({ card, isTop, stackIndex, onSwipe }: SwipeCardProps) 
               </span>
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-surface-raised)] via-transparent to-transparent" />
           <hr className="rule-gold absolute inset-x-6 bottom-0" />
 
           {isTop && (

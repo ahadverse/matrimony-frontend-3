@@ -19,6 +19,7 @@ export function AvatarPicker({
   label,
   hint,
   required,
+  error,
   uploading = false,
 }: {
   file: File | null;
@@ -26,6 +27,7 @@ export function AvatarPicker({
   label: string;
   hint?: string;
   required?: boolean;
+  error?: string;
   /** Shows a spinner over the photo and locks it while it is being sent. */
   uploading?: boolean;
 }) {
@@ -110,6 +112,8 @@ export function AvatarPicker({
       {hint && !file && (
         <p className="text-center text-xs text-[var(--color-text-faint)]">{hint}</p>
       )}
+
+      {error && <p className="text-center text-xs text-[var(--color-danger)]">{error}</p>}
 
       <input
         ref={inputRef}

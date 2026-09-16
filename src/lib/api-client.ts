@@ -42,6 +42,19 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * The swipe endpoint refuses a like/superlike below
+ * MIN_INTEREST_COMPLETION_PERCENT with this code. It is a standing condition,
+ * not a transient failure, so callers surface the server's own message (which
+ * names the percentage) and point at Edit Profile instead of offering a retry.
+ */
+export function isInterestGateError(error: unknown): error is ApiError {
+  return (
+    error instanceof ApiError &&
+    (error.body as { code?: string } | null)?.code === 'PROFILE_INCOMPLETE_FOR_INTEREST'
+  );
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const isFormData = options.body instanceof FormData;
   const headers = new Headers(options.headers);
