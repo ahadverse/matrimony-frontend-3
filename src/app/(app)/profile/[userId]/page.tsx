@@ -3,7 +3,8 @@
 import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { ArrowLeft, BadgeCheck, Lock, MapPin, MessageCircle } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, BadgeCheck, Lock, MapPin, MessageCircle, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -232,9 +233,43 @@ function ProfileLayout({
           <hr className="rule-gold my-4" />
 
           <ProfileBioSections profile={profile} />
+
+          {!profile.locked && <AssistanceServiceCta publicId={profile.publicId} />}
         </Card>
       </div>
     </FadeIn>
+  );
+}
+
+/**
+ * Only shown once a profile is actually unlocked — that's the moment a member
+ * has seen enough to know this search is hard, which is exactly who the
+ * assisted service is for. Carries the profile along so the advisor's first
+ * conversation already knows which candidate prompted the enquiry.
+ */
+function AssistanceServiceCta({ publicId }: { publicId: string | null }) {
+  const { t } = useLanguage();
+  const href = publicId
+    ? `/assistance-service?profileId=${encodeURIComponent(publicId)}`
+    : '/assistance-service';
+
+  return (
+    <div className="mt-5 rounded-xl bg-[var(--color-surface)] p-4">
+      <div className="flex items-start gap-3">
+        <span className="gradient-gold flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-on-gold)]">
+          <Sparkles size={16} />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[var(--color-text)]">{t('profileDetail.assistanceCtaTitle')}</p>
+          <p className="mt-1 text-sm text-[var(--color-text-muted)]">{t('profileDetail.assistanceCtaBody')}</p>
+        </div>
+      </div>
+      <Link href={href}>
+        <Button variant="gold" className="mt-3 w-full">
+          {t('profileDetail.assistanceCtaButton')}
+        </Button>
+      </Link>
+    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -252,6 +252,15 @@ function AssistanceForm({
   const [email, setEmail] = useState('');
   const [profileId, setProfileId] = useState('');
   const [submitted, setSubmitted] = useState(false);
+
+  // Plain window.location read rather than next/navigation's useSearchParams —
+  // this whole page isn't wrapped in Suspense, and this is a one-time prefill
+  // for a visitor arriving from a profile's "Explore Assistance Service" CTA,
+  // not something that needs to react to URL changes.
+  useEffect(() => {
+    const pid = new URLSearchParams(window.location.search).get('profileId');
+    if (pid) setProfileId(pid);
+  }, []);
 
   const selectedPlanData = ASSISTANCE_PLANS.find((plan) => plan.id === selectedPlan) ?? null;
 

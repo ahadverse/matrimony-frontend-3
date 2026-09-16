@@ -175,7 +175,7 @@ function publicProfilesQuery(filters: PublicProfileFilters, page: number) {
   };
 }
 
-export function usePublicProfiles(filters: PublicProfileFilters, page: number) {
+export function usePublicProfiles(filters: PublicProfileFilters, page: number, enabled = true) {
   return useQuery({
     ...publicProfilesQuery(filters, page),
     // Turning a page or applying a filter keeps the current results on screen
@@ -183,6 +183,7 @@ export function usePublicProfiles(filters: PublicProfileFilters, page: number) {
     // reader back to skeletons. `isPlaceholderData` tells the page to dim what
     // is showing rather than replace it.
     placeholderData: keepPreviousData,
+    enabled,
   });
 }
 

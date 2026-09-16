@@ -63,7 +63,14 @@
     "dayTogetherTitle": "A Day Together",
     "dayTogetherBody": "Answer the same questions as your match, separately, and see how closely you align.",
     "dayTogetherCta": "Start now",
-    "guardianModeAnnounce": "Guardian Mode — your family involved at every step"
+    "guardianModeAnnounce": "Guardian Mode — your family involved at every step",
+    "topupModal": {
+      "eyebrow": "Welcome to Biye Kora Lagbe",
+      "title": "Unlock More Matches",
+      "body": "Top up your wallet to view full profiles, send unlimited interests, and get Spotlighted to serious matches — starting from just {amount}.",
+      "cta": "Top Up Now",
+      "later": "Maybe Later"
+    }
   },
   "nav": {
     "home": "Home",
@@ -385,13 +392,13 @@
     "formSubmit": "Submit",
     "formSubmitting": "Submitting…",
     "formSuccess": "Thanks! Our team will contact you shortly.",
-    "formSuccessPaid": "Thanks! We'll verify your payment and reach out shortly.",
     "formError": "Could not submit your request. Please try again.",
+    "checkoutTitle": "Complete Your Payment",
+    "resultSuccessTitle": "Payment successful",
+    "resultSuccessBody": "Your payment has been received. Our team will reach out shortly to get you started.",
+    "resultFailedTitle": "Payment failed",
+    "resultFailedBody": "Something went wrong with your payment. Please try again or contact support.",
     "formSelectedPlanLabel": "Selected plan",
-    "manualBkashToggleLabel": "Already paid via bKash?",
-    "manualBkashInstructions": "Send {amount} via bKash (Send Money) to the number below, then submit your details.",
-    "manualBkashSubmit": "Submit payment",
-    "manualBkashPendingNote": "Our team will verify the payment and reach out shortly.",
     "howTitle": "How Assistance Service Works",
     "step1Title": "Assign Personal Advisor",
     "step1Body": "You are assigned one advisor who stays with you for the whole plan. They begin with a long conversation — not a form — about age, country, religion and level of practice, education, profession, family background, and the things that are genuinely non-negotiable versus merely preferred.",
@@ -971,7 +978,10 @@
     "lockedNotice": "Name, phone, email, full address and messaging stay hidden until you unlock this profile.",
     "lockedHiddenName": "Name hidden",
     "unlockedBadge": "Unlocked",
-    "heightFormat": "{feet} feet {inches} inch"
+    "heightFormat": "{feet} feet {inches} inch",
+    "assistanceCtaTitle": "Want hands-on help finding the right match?",
+    "assistanceCtaBody": "Our Assistance Service pairs you with a dedicated advisor who searches, verifies and introduces matches on your behalf.",
+    "assistanceCtaButton": "Explore Assistance Service"
   },
   "editProfile": {
     "title": "Edit Profile",
@@ -1105,20 +1115,6 @@
       "title": "International top-up",
       "body": "We don't yet support automatic payments from outside Bangladesh. Chat with our support team and we'll arrange your top-up manually.",
       "cta": "Chat with Support"
-    },
-    "manualBkash": {
-      "sectionTitle": "Or send money manually",
-      "instructions": "Send {amount} from your bKash app to the number below, then submit the Transaction ID from the confirmation SMS.",
-      "merchantNumberLabel": "bKash number (Send Money)",
-      "copy": "Copy",
-      "copied": "Copied",
-      "trxIdLabel": "Transaction ID (TrxID)",
-      "trxIdPlaceholder": "e.g. AJ7B9K2XQ1",
-      "payerNumberLabel": "Your bKash number",
-      "payerNumberPlaceholder": "01XXXXXXXXX",
-      "submit": "Submit for verification",
-      "submitted": "Submitted! We'll verify and credit your wallet shortly.",
-      "pendingNote": "Manual top-ups are checked by our team, usually within a few hours."
     },
     "history": {
       "title": "Top-up History",

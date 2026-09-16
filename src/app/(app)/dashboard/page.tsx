@@ -12,6 +12,7 @@ import { VerificationPromptCard } from '@/components/dashboard/VerificationPromp
 import { LiveActivityList } from '@/components/dashboard/LiveActivityList';
 import { RecommendedGrid } from '@/components/dashboard/RecommendedGrid';
 import { QuickActionsList } from '@/components/dashboard/QuickActionsList';
+import { TopUpPromptModal } from '@/components/dashboard/TopUpPromptModal';
 import { ShortlistSection } from '@/components/dashboard/ShortlistSection';
 import { ProfileViewsSection } from '@/components/dashboard/ProfileViewsSection';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
@@ -29,6 +30,8 @@ export default function DashboardPage() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
+      <TopUpPromptModal />
+
       <div className="flex flex-col gap-6 lg:col-span-2">
         <WelcomeBanner name={profile?.name?.split(' ')[0] ?? ''} />
 
