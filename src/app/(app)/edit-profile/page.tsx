@@ -397,6 +397,16 @@ function EditProfileContent() {
             value={currentUser?.dob ? String(calcAge(currentUser.dob)) : ''}
             disabled
           />
+          {/* Read-only: gender decides who is shown to whom, so it is set once
+              at signup and changed only by an admin. Shown here because when it
+              is missing or wrong the symptom is "the directory shows me the
+              wrong people", and there was previously no way to see it. */}
+          <Input
+            label={t('editProfile.gender')}
+            value={currentUser?.gender ? t(`auth.register.${currentUser.gender}`) : '—'}
+            disabled
+            error={currentUser && !currentUser.gender ? t('editProfile.genderMissing') : undefined}
+          />
           <LocationPicker
             idPrefix="field"
             required

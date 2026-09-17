@@ -998,6 +998,8 @@
     "tabVerification": "Verification",
     "tabPrivacy": "Privacy",
     "age": "Age",
+    "gender": "Gender",
+    "genderMissing": "No gender is set on your account — matches cannot be shown correctly until support sets it.",
     "motherTongue": "Mother Tongue",
     "englishComfort": "English Comfort",
     "residencyStatus": "Residency Status",
