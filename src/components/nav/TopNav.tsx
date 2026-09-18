@@ -9,6 +9,7 @@ import { Menu, X } from 'lucide-react';
 import { AvatarMenu } from './AvatarMenu';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
 import { useIsSignedIn } from '@/lib/auth-token';
 
@@ -86,8 +87,9 @@ export function TopNav() {
         <div className="flex items-center gap-2">
           {signedIn ? (
             <>
-              {/* No standalone ThemeToggle here: AvatarMenu carries its own, and
-                  rendering both would put two theme switches side by side. */}
+              {/* No standalone ThemeToggle or LanguageToggle here: AvatarMenu
+                  carries both, and rendering them twice would put two copies of
+                  each switch side by side. */}
               <Link href="/dashboard" className="hidden sm:block">
                 <Button size="md">{t('nav.dashboard')}</Button>
               </Link>
@@ -95,6 +97,7 @@ export function TopNav() {
             </>
           ) : (
             <>
+              <LanguageToggle className="hidden sm:flex" />
               <ThemeToggle />
               {/* Two separate actions. There was one button labelled
                   "Sign/Register" that went only to /login, so the primary
@@ -165,6 +168,16 @@ export function TopNav() {
                 </>
               )}
             </div>
+
+            {/* Signed-in members reach the language switch through AvatarMenu,
+                which the mobile header still shows; signed-out visitors have no
+                menu, so this is their only way to it below the sm breakpoint. */}
+            {!signedIn && (
+              <div className="mt-2 flex items-center justify-between border-t border-[var(--color-border)] px-1 pt-3 sm:hidden">
+                <span className="text-sm text-[var(--color-text-muted)]">{t('nav.language')}</span>
+                <LanguageToggle />
+              </div>
+            )}
           </div>
         </div>
       )}

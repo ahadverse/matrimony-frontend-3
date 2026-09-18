@@ -37,8 +37,8 @@ import type { AuthResponse, Gender } from '@/lib/types';
 /**
  * Registration is three screens and nothing more:
  *
- *   1. account  — photo, gender, phone, email, password. Creates the account.
- *   2. basic    — name, marital status, religion, profession, date of birth,
+ *   1. account  — photo, gender, phone, name, password. Creates the account.
+ *   2. basic    — email, marital status, religion, profession, date of birth,
  *                 height, a short bio. Creates the profile.
  *   3. family   — where they live, and the family block.
  *
@@ -280,7 +280,7 @@ function RegisterWizard() {
       if (!saved.step || saved.step === 'done') return;
       // An explicit ?step= means we were routed here deliberately; stored
       // progress from an abandoned attempt must not drag the member back to
-      // 'account' and ask for an email and password they have already set.
+      // 'account' and ask for a name and password they have already set.
       if (!hasRequestedStep) setStep(saved.step);
       setPhone(saved.phone ?? EMPTY_PHONE);
       restoredProgress.current = true;
@@ -338,7 +338,10 @@ function RegisterWizard() {
   const createAccount = useMutation({
     mutationFn: async () => {
       const body = new FormData();
-      body.append('email', form.email.trim());
+      // The name goes in with the account, not on screen two: it is asked for
+      // here now, and sending it straight away means someone who abandons the
+      // wizard still leaves a profile with a name on it.
+      body.append('name', form.name.trim());
       body.append('password', form.password);
       if (form.gender) body.append('gender', form.gender);
       const formatted = formatPhone(phone);
@@ -368,6 +371,9 @@ function RegisterWizard() {
       await api.patch('users/me/basics', {
         gender: form.gender || undefined,
         dob: form.dob || undefined,
+        // Asked for on this screen now, so the account picks it up here — the
+        // uniqueness clash comes back as a 409 the catch below reports.
+        email: form.email.trim() || undefined,
       });
       await api.put('profiles/me', {
         name: form.name.trim(),
@@ -436,7 +442,7 @@ function RegisterWizard() {
     if (!avatar) e.avatar = required;
     if (!form.gender) e.gender = required;
     if (phone.number.replace(/\D/g, '').length < 6) e.phone = t('auth.register.errPhone');
-    if (!form.email.trim()) e.email = required;
+    if (!form.name.trim()) e.name = required;
     if (form.password.length < MIN_PASSWORD_LENGTH) {
       e.password = t('auth.register.errPasswordMin', { min: MIN_PASSWORD_LENGTH });
     }
@@ -446,7 +452,7 @@ function RegisterWizard() {
   function validateBasic(): Partial<Record<FieldKey, string>> {
     const e: Partial<Record<FieldKey, string>> = {};
     if (!form.gender) e.gender = required;
-    if (!form.name.trim()) e.name = required;
+    if (!form.email.trim()) e.email = required;
     if (!form.maritalStatus) e.maritalStatus = required;
     if (!form.religion) e.religion = required;
     if (!form.profession) e.profession = required;
@@ -584,16 +590,15 @@ function RegisterWizard() {
                   />
                 </div>
 
-                <div data-field="email">
+                <div data-field="name">
                   <Input
-                    label={t('auth.register.email')}
-                    type="email"
+                    label={t('auth.register.candidateName')}
                     required
-                    autoComplete="email"
-                    placeholder={t('auth.register.emailPlaceholder')}
-                    value={form.email}
-                    error={errors.email}
-                    onChange={(e) => set('email', e.target.value)}
+                    autoComplete="name"
+                    placeholder={t('auth.register.namePlaceholder')}
+                    value={form.name}
+                    error={errors.name}
+                    onChange={(e) => set('name', e.target.value)}
                   />
                 </div>
                 <div data-field="password">
@@ -666,14 +671,16 @@ function RegisterWizard() {
                   </FieldRow>
                 )}
 
-                <div data-field="name">
+                <div data-field="email">
                   <Input
-                    label={t('auth.register.candidateName')}
+                    label={t('auth.register.email')}
+                    type="email"
                     required
-                    placeholder={t('auth.register.namePlaceholder')}
-                    value={form.name}
-                    error={errors.name}
-                    onChange={(e) => set('name', e.target.value)}
+                    autoComplete="email"
+                    placeholder={t('auth.register.emailPlaceholder')}
+                    value={form.email}
+                    error={errors.email}
+                    onChange={(e) => set('email', e.target.value)}
                   />
                 </div>
 

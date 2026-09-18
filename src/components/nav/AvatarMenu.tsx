@@ -11,6 +11,7 @@ import { resolveUploadUrl } from '@/lib/api-client';
 import { clearToken } from '@/lib/auth-token';
 import { resetChatSocket } from '@/lib/socket';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { LanguageToggle } from '@/components/ui/LanguageToggle';
 
 export function AvatarMenu() {
   const { t } = useLanguage();
@@ -92,6 +93,11 @@ export function AvatarMenu() {
           </Link>
 
           <div className="my-1 border-t border-[var(--color-border)]" />
+
+          <div className="flex items-center justify-between px-4 py-2.5">
+            <span className="text-sm text-[var(--color-text)]">{t('nav.language')}</span>
+            <LanguageToggle />
+          </div>
 
           <div className="flex items-center justify-between px-4 py-2.5">
             <span className="text-sm text-[var(--color-text)]">{t('nav.theme')}</span>

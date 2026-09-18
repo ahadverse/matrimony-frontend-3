@@ -3,12 +3,12 @@
 import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import Link from 'next/link';
-import { ArrowLeft, BadgeCheck, Lock, MapPin, MessageCircle, Sparkles } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, Lock, MapPin, MessageCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { FadeIn } from '@/components/motion/FadeIn';
+import { AssistedServiceBanner } from '@/components/marketing/AssistedServiceBanner';
 import { ProfileBioSections } from '@/components/profile/ProfileBioSections';
 import {
   useConversations,
@@ -233,44 +233,28 @@ function ProfileLayout({
           <hr className="rule-gold my-4" />
 
           <ProfileBioSections profile={profile} />
-
-          {!profile.locked && <AssistanceServiceCta publicId={profile.publicId} />}
         </Card>
       </div>
+
+      {/* Its own full-width section below both columns rather than a block
+          inside the bio card: it is an offer about the search, not a fact about
+          this candidate, and nesting it in the card read as one of them.
+          Shown whether or not the profile is unlocked — someone still looking at
+          a locked card is as good a candidate for the assisted service as
+          someone who has already spent an unlock. */}
+      <AssistedServiceBanner className="mt-5" href={assistanceHref(profile.publicId)} />
     </FadeIn>
   );
 }
 
 /**
- * Only shown once a profile is actually unlocked — that's the moment a member
- * has seen enough to know this search is hard, which is exactly who the
- * assisted service is for. Carries the profile along so the advisor's first
- * conversation already knows which candidate prompted the enquiry.
+ * Carries the profile along so the advisor's first conversation already knows
+ * which candidate prompted the enquiry.
  */
-function AssistanceServiceCta({ publicId }: { publicId: string | null }) {
-  const { t } = useLanguage();
-  const href = publicId
+function assistanceHref(publicId: string | null): string {
+  return publicId
     ? `/assistance-service?profileId=${encodeURIComponent(publicId)}`
     : '/assistance-service';
-
-  return (
-    <div className="mt-5 rounded-xl bg-[var(--color-surface)] p-4">
-      <div className="flex items-start gap-3">
-        <span className="gradient-gold flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--color-on-gold)]">
-          <Sparkles size={16} />
-        </span>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-[var(--color-text)]">{t('profileDetail.assistanceCtaTitle')}</p>
-          <p className="mt-1 text-sm text-[var(--color-text-muted)]">{t('profileDetail.assistanceCtaBody')}</p>
-        </div>
-      </div>
-      <Link href={href}>
-        <Button variant="gold" className="mt-3 w-full">
-          {t('profileDetail.assistanceCtaButton')}
-        </Button>
-      </Link>
-    </div>
-  );
 }
 
 /**

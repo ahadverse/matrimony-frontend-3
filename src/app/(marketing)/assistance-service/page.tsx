@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { FadeIn } from '@/components/motion/FadeIn';
+import { AssistedServiceBanner } from '@/components/marketing/AssistedServiceBanner';
 import { StaggerItem, StaggerList } from '@/components/motion/StaggerList';
 import { api, ApiError } from '@/lib/api-client';
 import { useLanguage } from '@/lib/i18n/LanguageProvider';
@@ -75,7 +76,11 @@ export default function AssistanceServicePage() {
           </FadeIn>
         </div>
 
-        <FadeIn delay={0.25} className="relative z-10 mx-auto mt-12 max-w-3xl" id="assistance-form">
+        <FadeIn delay={0.24} className="relative z-10 mx-auto mt-12 max-w-3xl">
+          <AssistedServiceBanner />
+        </FadeIn>
+
+        <FadeIn delay={0.25} className="relative z-10 mx-auto mt-8 max-w-3xl" id="assistance-form">
           {/* Prices shown here too, not just in the pricing table further down
               the page — a visitor who scrolls straight to the form should never
               have to hunt for what a plan costs before filling it in. */}

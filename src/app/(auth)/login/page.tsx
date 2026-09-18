@@ -62,14 +62,24 @@ function LoginForm() {
           placeholder={t('auth.login.identifierPlaceholder')}
           required
         />
-        <Input
-          label={t('auth.login.password')}
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="••••••••"
-          required
-        />
+        <div>
+          <Input
+            label={t('auth.login.password')}
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            required
+          />
+          <p className="mt-1.5 text-right">
+            <Link
+              href="/forgot-password"
+              className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-primary-light)]"
+            >
+              {t('auth.forgot.link')}
+            </Link>
+          </p>
+        </div>
         <Button type="submit" className="mt-2 w-full" loading={loginMutation.isPending}>
           {t('auth.login.submit')}
         </Button>

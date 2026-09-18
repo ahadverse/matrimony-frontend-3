@@ -246,6 +246,17 @@ label[for] {
   background: linear-gradient(135deg, var(--color-gold-light) 0%, var(--color-gold) 100%);
 }
 
+/* Ground for the assisted-service banner. Deliberately fixed in both themes
+   rather than token-driven: the banner is one dark premium band that has to
+   read the same whether the page around it is cream or near-black, and gold
+   only holds its lustre on a dark ground. Everything drawn on it therefore
+   uses white/gold literals, not the surface tokens. */
+.gradient-assisted {
+  background:
+    radial-gradient(120% 140% at 88% 18%, rgba(201, 162, 39, 0.22) 0%, transparent 58%),
+    linear-gradient(135deg, #5c1030 0%, #3a0a1e 52%, #240610 100%);
+}
+
 .gradient-text {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   -webkit-background-clip: text;
