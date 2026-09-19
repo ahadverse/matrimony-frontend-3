@@ -744,6 +744,7 @@
       "errRequired": "This field is required",
       "errPhone": "Enter a valid mobile number",
       "errPasswordMin": "Use at least {min} characters",
+      "errNameMin": "Enter the full name — at least {min} characters",
       "errBioShort": "Write at least {min} characters — you have {count}",
       "saveError": "Could not save this step. Please try again.",
       "stepAccountSection": "Your account",

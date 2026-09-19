@@ -57,6 +57,8 @@ type Step = 'account' | 'basic' | 'family' | 'done';
 const REGISTER_PROGRESS_KEY = 'biyekoralagbe_register_progress';
 
 const MIN_PASSWORD_LENGTH = 8;
+/** Mirrors `RegisterDto.name`, so a one-letter name is caught here, not by a 400. */
+const MIN_NAME_LENGTH = 2;
 /** Mirrors the bio floor the profile-completion scorer expects of a finished signup. */
 const MIN_BIO_LENGTH = 20;
 
@@ -442,7 +444,13 @@ function RegisterWizard() {
     if (!avatar) e.avatar = required;
     if (!form.gender) e.gender = required;
     if (phone.number.replace(/\D/g, '').length < 6) e.phone = t('auth.register.errPhone');
-    if (!form.name.trim()) e.name = required;
+    const name = form.name.trim();
+    // Required, and the server agrees: the account is what creates the profile
+    // row, and a profile nobody can put a name to is one no admin can approve.
+    if (!name) e.name = required;
+    else if (name.length < MIN_NAME_LENGTH) {
+      e.name = t('auth.register.errNameMin', { min: MIN_NAME_LENGTH });
+    }
     if (form.password.length < MIN_PASSWORD_LENGTH) {
       e.password = t('auth.register.errPasswordMin', { min: MIN_PASSWORD_LENGTH });
     }
